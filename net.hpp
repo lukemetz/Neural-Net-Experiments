@@ -32,7 +32,7 @@ struct Logistic {
 template <int input_size, int hidden_size, int output_size,
          typename activation = Logistic, typename error = Squared_Error>
 struct FeedForward_Network{
-  float learning_rate = 0.8f;
+  float learning_rate;
 
   Array2D<float, input_size, hidden_size> weights_inputToHidden;
   Array2D<float, hidden_size, output_size> weights_hiddenToOutput;
@@ -41,7 +41,8 @@ struct FeedForward_Network{
   std::array<float, hidden_size> activation_hidden;
   std::array<float, output_size> activation_output;
 
-  FeedForward_Network(float learning_rate) : learning_rate(learning_rate) {}
+  FeedForward_Network(float learning_rate = 0.8f) :
+    learning_rate(learning_rate) {}
 
   void train(std::array<float, input_size> input, std::array<float, output_size> target) {
       calculate_activation(input);
