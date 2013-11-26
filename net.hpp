@@ -10,13 +10,29 @@ struct Array2D {
   }
 };
 
-class FeedForward {
-public:
-  static const int input_size = 2;
-  static const int hidden_size = 5;
-  static const int output_size = 2;
 
-  const float learning_rate = .8;
+//TODO abstract this math into a structure containing an execute function
+inline float activation_func(float k) {
+  //logistic
+  return 1 / (1 + exp(-k));
+}
+
+inline float activation_dir_func(float k) {
+  return k * (1 - k);
+}
+
+inline float error_function(float target, float result) {
+  //Squared error
+  return 1/2.0f * (target - result) * (target - result);
+}
+inline float error_dir_function(float target, float result) {
+  return (target - result);
+}
+
+template <int input_size, int hidden_size, int output_size>
+struct FeedForward_Network{
+  float learning_rate = 0.8f;
+
   Array2D<float, input_size, hidden_size> weights_inputToHidden;
   Array2D<float, hidden_size, output_size> weights_hiddenToOutput;
 
@@ -24,16 +40,10 @@ public:
   std::array<float, hidden_size> activation_hidden;
   std::array<float, output_size> activation_output;
 
-  /*template <std::size_t train_size>
-  void fit(Array2D<float, input_size, train_size> input, Array2D<float, output_size, train_size> target) {
-    for (int i=0; i < train_size; ++i) {
-      auto result = predict(input[i]);
-      backprop(target);
-    }
-  }; */
+  FeedForward_Network(float learning_rate) : learning_rate(learning_rate) {}
 
-  void fit(std::array<float, input_size> input, std::array<float, output_size> target) {
-      auto result = predict(input);
+  void train(std::array<float, input_size> input, std::array<float, output_size> target) {
+      calculate_activation(input);
       backprop(target);
   }
 
@@ -55,24 +65,23 @@ public:
   }
 
   void backprop(std::array<float, output_size> target) {
+    //Calculate deltas
     std::array<float, output_size> output_deltas;
     for (int i=0; i < output_size; ++i) {
       output_deltas[i] = error_dir_function(target[i], activation_output[i]) * activation_dir_func(activation_output[i]);
     }
-
     std::array<float, hidden_size> hidden_deltas;
     for (int i=0; i < hidden_size; ++i) {
       float error = 0;
       for (int k=0; k < output_size; ++k) {
-        error += output_deltas[k] * weights_hiddenToOutput(i, k); //TODO check order
+        error += output_deltas[k] * weights_hiddenToOutput(i, k);
       }
       hidden_deltas[i] = error * activation_dir_func(activation_hidden[i]);
     }
 
-    //update weights
+    //Update internal weights
     for (int k=0; k < hidden_size; ++k) {
       for (int i=0; i < output_size; ++i) {
-        //TODO check order
         weights_hiddenToOutput(k,i) += learning_rate * output_deltas[i] * activation_hidden[k];
       }
     }
@@ -84,33 +93,7 @@ public:
     }
   }
 
-  //TODO abstract this math into a structure containing an execute function
-  inline float activation_func(float k) {
-    //logistic
-    return 1 / (1 + exp(-k));
-  }
-
-  inline float activation_dir_func(float k) {
-    return k * (1 - k);
-  }
-
-  inline float error_function(float target, float result) {
-    //Squared error
-    return 1/2.0f * (target - result) * (target - result);
-  }
-  inline float error_dir_function(float target, float result) {
-    return (target - result);
-  }
-
-  /*float delta_weight(float target, float result) {
-    //learning rate *
-    //derivative of error with respect to activation *
-    //derivative of activation with respect to the net input
-    //derivative of the net input with respect to a weight
-    float dweight = learning_rate * error_dir_function(target, result) * activation_dir_func(value);
-  } */
-
-  std::array<float, 2> predict(std::array<float, input_size> input) {
+  void calculate_activation(std::array<float, input_size> input) {
     activation_input = input;
     for (int i = 0; i < hidden_size; ++i) {
       float temp = 0;
@@ -126,7 +109,27 @@ public:
       }
       activation_output[i] = activation_func(temp);
     }
+  }
 
+  std::array<float, output_size> predict(std::array<float, input_size> input) {
+    calculate_activation(input);
     return activation_output;
-  };
+  }
 };
+
+  /*template <std::size_t train_size>
+  void fit(Array2D<float, input_size, train_size> input, Array2D<float, output_size, train_size> target) {
+    for (int i=0; i < train_size; ++i) {
+      auto result = predict(input[i]);
+      backprop(target);
+    }
+  }; */
+
+
+  /*float delta_weight(float target, float result) {
+    //learning rate *
+    //derivative of error with respect to activation *
+    //derivative of activation with respect to the net input
+    //derivative of the net input with respect to a weight
+    float dweight = learning_rate * error_dir_function(target, result) * activation_dir_func(value);
+  } */
