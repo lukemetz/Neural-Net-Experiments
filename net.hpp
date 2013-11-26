@@ -10,26 +10,27 @@ struct Array2D {
   }
 };
 
+struct Squared_Error {
+  static inline float error(float target, float result) {
+    return 1/2.0f * (target - result) * (target - result);
+  }
+  static inline float error_dir(float target, float result) {
+    return (target - result);
+  }
+};
 
-//TODO abstract this math into a structure containing an execute function
-inline float activation_func(float k) {
-  //logistic
-  return 1 / (1 + exp(-k));
-}
+struct Logistic {
+  static inline float activation(float k) {
+    return 1 / (1 + exp(-k));
+  }
 
-inline float activation_dir_func(float k) {
-  return k * (1 - k);
-}
+  static inline float activation_dir(float k) {
+    return k * (1 - k);
+  }
+};
 
-inline float error_function(float target, float result) {
-  //Squared error
-  return 1/2.0f * (target - result) * (target - result);
-}
-inline float error_dir_function(float target, float result) {
-  return (target - result);
-}
-
-template <int input_size, int hidden_size, int output_size>
+template <int input_size, int hidden_size, int output_size,
+         typename activation = Logistic, typename error = Squared_Error>
 struct FeedForward_Network{
   float learning_rate = 0.8f;
 
@@ -68,15 +69,15 @@ struct FeedForward_Network{
     //Calculate deltas
     std::array<float, output_size> output_deltas;
     for (int i=0; i < output_size; ++i) {
-      output_deltas[i] = error_dir_function(target[i], activation_output[i]) * activation_dir_func(activation_output[i]);
+      output_deltas[i] = error::error_dir(target[i], activation_output[i]) * activation::activation_dir(activation_output[i]);
     }
     std::array<float, hidden_size> hidden_deltas;
     for (int i=0; i < hidden_size; ++i) {
-      float error = 0;
+      float error_sum= 0;
       for (int k=0; k < output_size; ++k) {
-        error += output_deltas[k] * weights_hiddenToOutput(i, k);
+        error_sum += output_deltas[k] * weights_hiddenToOutput(i, k);
       }
-      hidden_deltas[i] = error * activation_dir_func(activation_hidden[i]);
+      hidden_deltas[i] = error_sum * activation::activation_dir(activation_hidden[i]);
     }
 
     //Update internal weights
@@ -100,14 +101,14 @@ struct FeedForward_Network{
       for (int j = 0; j < input_size; j++) {
         temp += input[j] * weights_inputToHidden(j, i);
       }
-      activation_hidden[i] = activation_func(temp);
+      activation_hidden[i] = activation::activation(temp);
     }
     for (int i = 0; i < output_size; ++i) {
       float temp = 0;
       for (int j = 0; j < hidden_size; j++) {
         temp += activation_hidden[j] * weights_hiddenToOutput(j, i);
       }
-      activation_output[i] = activation_func(temp);
+      activation_output[i] = activation::activation(temp);
     }
   }
 
@@ -116,20 +117,3 @@ struct FeedForward_Network{
     return activation_output;
   }
 };
-
-  /*template <std::size_t train_size>
-  void fit(Array2D<float, input_size, train_size> input, Array2D<float, output_size, train_size> target) {
-    for (int i=0; i < train_size; ++i) {
-      auto result = predict(input[i]);
-      backprop(target);
-    }
-  }; */
-
-
-  /*float delta_weight(float target, float result) {
-    //learning rate *
-    //derivative of error with respect to activation *
-    //derivative of activation with respect to the net input
-    //derivative of the net input with respect to a weight
-    float dweight = learning_rate * error_dir_function(target, result) * activation_dir_func(value);
-  } */
