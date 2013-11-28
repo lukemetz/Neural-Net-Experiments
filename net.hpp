@@ -46,7 +46,7 @@ struct FeedForward_Network{
 };
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void train(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     std::array<float, input_size> input, std::array<float, output_size> target) {
     calculate_activation(network, input);
@@ -54,7 +54,7 @@ void train(FeedForward_Network<input_size, hidden_size, output_size, activation,
 }
 
 template <int input_size, int hidden_size, int output_size, int point_count,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void train(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     Array2D<float, point_count, input_size> inputs, Array2D<float, point_count, output_size> targets) {
     for (int i = 0; i < point_count; ++i) {
@@ -64,7 +64,7 @@ void train(FeedForward_Network<input_size, hidden_size, output_size, activation,
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void randomize(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network) {
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0, .1);
@@ -83,14 +83,14 @@ void randomize(FeedForward_Network<input_size, hidden_size, output_size, activat
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
     std::array<float, output_size> target) {
   backprop(network, target.data());
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
     float* target) {
   //Calculate deltas
@@ -122,14 +122,14 @@ void backprop(FeedForward_Network<input_size, hidden_size, output_size, activati
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void calculate_activation(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     std::array<float, input_size> input) {
   calculate_activation(network, input.data());
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 void calculate_activation(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     float * input) {
   for (int i=0; i < input_size; ++i) {
@@ -152,7 +152,7 @@ void calculate_activation(FeedForward_Network<input_size, hidden_size, output_si
 }
 
 template <int input_size, int hidden_size, int output_size,
-         typename activation = Logistic, typename error = Squared_Error>
+         typename activation, typename error>
 std::array<float, output_size> predict(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     std::array<float, input_size> input) {
   calculate_activation(network, input);
