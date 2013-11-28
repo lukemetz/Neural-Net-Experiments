@@ -10,3 +10,9 @@ add_definitions("-std=c++11")
 
 add_executable(tests tests.cpp main.cpp)
 target_link_libraries(tests gtest)
+
+add_executable(mnist mnist.cpp)
+target_link_libraries(mnist armadillo)
+
+add_executable(convert_to_arma convert_to_arma.cpp)
+target_link_libraries(convert_to_arma armadillo)
