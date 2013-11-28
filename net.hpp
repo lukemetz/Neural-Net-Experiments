@@ -2,17 +2,6 @@
 #include <algorithm>
 #include <random>
 
-template<typename T, int x_size, int y_size>
-struct Array2D {
-  std::array<T, x_size * y_size> data;
-  T& operator() (int x, int y) {
-    return data.at(y + y_size*x);
-  }
-  decltype(data.begin()) row(int x) {
-    return data.begin()+x*y_size;
-  }
-};
-
 struct Squared_Error {
   static inline float error(float target, float result) {
     return 1/2.0f * (target - result) * (target - result);
@@ -36,9 +25,12 @@ template <int input_size, int hidden_size, int output_size,
          typename activation = Logistic, typename error = Squared_Error>
 struct FeedForward_Network{
   float learning_rate;
-  FeedForward_Network(float learning_rate = 0.8f) : learning_rate(learning_rate) {};
-  Array2D<float, input_size, hidden_size> weights_inputToHidden;
-  Array2D<float, hidden_size, output_size> weights_hiddenToOutput;
+  FeedForward_Network(float learning_rate = 0.8f) : learning_rate(learning_rate) {
+    weights_inputToHidden = arma::Mat<float>(input_size, hidden_size);
+    weights_hiddenToOutput = arma::Mat<float>(hidden_size, output_size);
+  };
+  arma::Mat<float> weights_inputToHidden;
+  arma::Mat<float> weights_hiddenToOutput;
 
   std::array<float, input_size> activation_input;
   std::array<float, hidden_size> activation_hidden;
@@ -53,11 +45,11 @@ void train(FeedForward_Network<input_size, hidden_size, output_size, activation,
     backprop(network, target);
 }
 
-template <int input_size, int hidden_size, int output_size, int point_count,
+template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void train(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
-    Array2D<float, point_count, input_size> inputs, Array2D<float, point_count, output_size> targets) {
-    for (int i = 0; i < point_count; ++i) {
+    arma::Mat<float> inputs, arma::Mat<float> targets) {
+    for (int i = 0; i < targets.n_rows; ++i) {
       calculate_activation(network, inputs.row(i));
       backprop(network, targets.row(i));
     }
@@ -82,17 +74,17 @@ void randomize(FeedForward_Network<input_size, hidden_size, output_size, activat
   }
 }
 
-template <int input_size, int hidden_size, int output_size,
+/*template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
     std::array<float, output_size> target) {
-  backprop(network, target.data());
-}
+  backprop(network, target);
+} */
 
-template <int input_size, int hidden_size, int output_size,
+template <typename arma_t, int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
-    float* target) {
+    arma_t target) {
   //Calculate deltas
   std::array<float, output_size> output_deltas;
   for (int i=0; i < output_size; ++i) {
@@ -120,25 +112,25 @@ void backprop(FeedForward_Network<input_size, hidden_size, output_size, activati
     }
   }
 }
-
+/*
 template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void calculate_activation(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     std::array<float, input_size> input) {
   calculate_activation(network, input.data());
-}
+} */
 
-template <int input_size, int hidden_size, int output_size,
+template <typename arma_t, int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void calculate_activation(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
-    float * input) {
-  for (int i=0; i < input_size; ++i) {
-    network.activation_input[i] = input[i];
+    arma_t input) {
+  for (int i=0; i < input_size; i++) {
+    network.activation_input[i] = input(0, i);
   }
   for (int i = 0; i < hidden_size; ++i) {
     float temp = 0;
     for (int j = 0; j < input_size; j++) {
-      temp += input[j] * network.weights_inputToHidden(j, i);
+      temp += network.activation_input[j] * network.weights_inputToHidden(j, i);
     }
     network.activation_hidden[i] = activation::activation(temp);
   }
@@ -154,7 +146,7 @@ void calculate_activation(FeedForward_Network<input_size, hidden_size, output_si
 template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 std::array<float, output_size> predict(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
-    std::array<float, input_size> input) {
+    arma::Mat<float> input) {
   calculate_activation(network, input);
   return network.activation_output;
 }

@@ -30,29 +30,13 @@ void check_xor(model_t f) {
   EXPECT_GT(result[0], .9);
 }
 
-
-TEST(FeedForward_Network, reasonable_results_for_single_xor) {
-  FeedForward_Network<2, 10, 2> f(0.8f);
-  randomize(f);
-
-
-  for (int z=0; z < 10000; z++) {
-    for (int i=0; i<2; i++) {
-      for (int j=0; j<2; j++) {
-        train(f, {{float(i),float(j)}}, xor_func(i, j));
-      }
-    }
-  }
-  check_xor(f);
-}
-
 TEST(FeedForward_Network, reasonable_results_for_array_xor) {
   FeedForward_Network<2, 10, 2> f(0.8f);
   randomize(f);
 
   const int num_rows = 10000;
-  Array2D<float, num_rows, 2> features;
-  Array2D<float, num_rows, 2> target;
+  arma::Mat<float> features(num_rows, 2);
+  arma::Mat<float> target(num_rows, 2);
 
   for (int z=0; z < num_rows/4; z++) {
     for (int i=0; i<2; i++) {
