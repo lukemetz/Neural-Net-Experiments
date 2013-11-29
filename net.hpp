@@ -60,7 +60,7 @@ template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void randomize(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network) {
   std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0, .1);
+  std::normal_distribution<float> distribution(0, .01);
 
   network.weights_inputToHidden.imbue([&]() {return distribution(generator);});
   network.weights_hiddenToOutput.imbue([&]() {return distribution(generator);});
