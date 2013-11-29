@@ -29,15 +29,14 @@ struct Logistic {
 
 template <int input_size, int hidden_size, int output_size,
          typename activation = Logistic, typename error = Squared_Error>
-struct FeedForward_Network{
-  float learning_rate;
-  FeedForward_Network(float learning_rate = 0.8f) : learning_rate(learning_rate) {
+struct FeedForward_Network {
+  FeedForward_Network() {
     weights_inputToHidden = arma::Mat<float>(input_size, hidden_size);
     weights_hiddenToOutput = arma::Mat<float>(hidden_size, output_size);
     activation_input = arma::Mat<float>(input_size, 1);
     activation_output = arma::Mat<float>(output_size, 1);
     activation_hidden = arma::Mat<float>(hidden_size, 1);
-  };
+  }
   arma::Mat<float> weights_inputToHidden;
   arma::Mat<float> weights_hiddenToOutput;
 
@@ -49,10 +48,10 @@ struct FeedForward_Network{
 template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void train(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
-    arma::Mat<float> inputs, arma::Mat<float> targets) {
+    arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate) {
     for (int i = 0; i < targets.n_rows; ++i) {
       calculate_activation(network, inputs.row(i));
-      backprop(network, targets.row(i));
+      backprop(network, targets.row(i), learning_rate);
     }
 }
 
@@ -69,16 +68,16 @@ void randomize(FeedForward_Network<input_size, hidden_size, output_size, activat
 template <typename arma_t, int input_size, int hidden_size, int output_size,
          typename activation, typename error>
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
-    arma_t target) {
+    arma_t target, float learning_rate = 0.8f) {
   //Calculate deltas
   arma::Mat<float> output_deltas(output_size, 1);
   output_deltas = error::error_dir(target.t(), network.activation_output) % activation::activation_dir(network.activation_output);
 
   arma::Mat<float> hidden_deltas (hidden_size , 1);
   hidden_deltas = (network.weights_hiddenToOutput * output_deltas) % activation::activation_dir(network.activation_hidden);
-  network.weights_hiddenToOutput += network.learning_rate * network.activation_hidden * output_deltas.t();
+  network.weights_hiddenToOutput += learning_rate * network.activation_hidden * output_deltas.t();
 
-  network.weights_inputToHidden += network.learning_rate * network.activation_input * hidden_deltas.t();
+  network.weights_inputToHidden += learning_rate * network.activation_input * hidden_deltas.t();
 }
 
 template <typename arma_t, int input_size, int hidden_size, int output_size,

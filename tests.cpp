@@ -31,7 +31,7 @@ void check_xor(model_t f) {
 }
 
 TEST(FeedForward_Network, reasonable_results_for_array_xor) {
-  FeedForward_Network<2, 10, 2> f(0.8f);
+  FeedForward_Network<2, 10, 2> f;
   randomize(f);
 
   const int num_rows = 10000;
@@ -50,7 +50,8 @@ TEST(FeedForward_Network, reasonable_results_for_array_xor) {
     }
   }
 
-  train(f, features, target);
+  float learning_rate = 0.8f;
+  train(f, features, target, learning_rate);
   check_xor(f);
 }
 

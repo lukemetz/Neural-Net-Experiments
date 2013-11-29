@@ -20,18 +20,17 @@ int main(int argc, char * argv[]) {
   A.shed_col(0);
   const int feature_size = 784;
 
-  FeedForward_Network<feature_size, 1000, 10> f(0.1f);
+  FeedForward_Network<feature_size, 1000, 10> f;
   randomize(f);
   std::cout << "train" << std::endl;
   A /= 256;
   A -= .5;
   for (int i=0; i <100; i++) {
     std::cout << i << std::endl;
-    train(f, A, labels);
+    train(f, A, labels, 0.1f);
   }
     std::cout << "predict" << std::endl;
     std::cout << predict(f, A.rows(0,10)).t() << std::endl;
-    train(f, A, labels);
     std::cout << labels << std::endl;
 
   return 0;
