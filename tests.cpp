@@ -10,7 +10,7 @@ std::array<float, 2> xor_func(float x, float y) {
 
 template <typename model_t>
 void check_xor(model_t f) {
-  std::array<float, 2> result;
+  arma::Mat<float> result;
 
   result = predict(f, {{0,0}});
 

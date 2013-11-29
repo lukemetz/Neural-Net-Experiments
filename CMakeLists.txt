@@ -8,6 +8,7 @@ add_definitions("-Wall")
 add_definitions("-std=c++11")
 
 add_executable(tests tests.cpp main.cpp)
+target_link_libraries(tests armadillo)
 target_link_libraries(tests gtest)
 
 add_executable(mnist mnist.cpp)
