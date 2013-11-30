@@ -47,13 +47,25 @@ struct FeedForward_Network {
 
 template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
-void train(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
+void train_online(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
     arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate) {
     for (int i = 0; i < targets.n_rows; ++i) {
       calculate_activation(network, inputs.row(i));
       backprop(network, targets.row(i), learning_rate);
     }
 }
+
+template <int input_size, int hidden_size, int output_size,
+         typename activation, typename error>
+void train_batch(FeedForward_Network<input_size, hidden_size, output_size, activation, error>& network,
+    arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate, int batch_size) {
+    int batches_in_train = targets.n_rows/batch_size - 1;
+    for (int i = 0; i < batches_in_train; ++i) {
+      calculate_activation(network, inputs.rows(i*batch_size, (i+1) * batch_size));
+      backprop(network, targets.rows(i*batch_size, (i+1) * batch_size), learning_rate);
+    }
+}
+
 
 template <int input_size, int hidden_size, int output_size,
          typename activation, typename error>
@@ -70,10 +82,10 @@ template <typename arma_t, int input_size, int hidden_size, int output_size,
 void backprop(FeedForward_Network<input_size, hidden_size, output_size, activation, error> &network,
     arma_t target, float learning_rate = 0.8f) {
   //Calculate deltas
-  arma::Mat<float> output_deltas(output_size, 1);
+  arma::Mat<float> output_deltas(output_size, network.activation_output.n_cols);
   output_deltas = error::error_dir(target.t(), network.activation_output) % activation::activation_dir(network.activation_output);
 
-  arma::Mat<float> hidden_deltas (hidden_size , 1);
+  arma::Mat<float> hidden_deltas (hidden_size , network.activation_output.n_cols);
   hidden_deltas = (network.weights_hiddenToOutput * output_deltas) % activation::activation_dir(network.activation_hidden);
   network.weights_hiddenToOutput += learning_rate * network.activation_hidden * output_deltas.t();
 

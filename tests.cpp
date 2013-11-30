@@ -51,7 +51,7 @@ TEST(FeedForward_Network, reasonable_results_for_array_xor) {
   }
 
   float learning_rate = 0.8f;
-  train(f, features, target, learning_rate);
+  train_online(f, features, target, learning_rate);
   check_xor(f);
 }
 

@@ -25,13 +25,13 @@ int main(int argc, char * argv[]) {
   std::cout << "train" << std::endl;
   A /= 256;
   A -= .5;
-  for (int i=0; i <100; i++) {
+  for (int i=0; i <50; i++) {
     std::cout << i << std::endl;
-    train(f, A, labels, 0.1f);
+    train_batch(f, A.rows(0, n_rows-1), labels, 0.03f, 10);
   }
-    std::cout << "predict" << std::endl;
-    std::cout << predict(f, A.rows(0,10)).t() << std::endl;
-    std::cout << labels << std::endl;
+  std::cout << "predict" << std::endl;
+  std::cout << predict(f, A.rows(0,10)).t() << std::endl;
+  std::cout << labels << std::endl;
 
   return 0;
 }
