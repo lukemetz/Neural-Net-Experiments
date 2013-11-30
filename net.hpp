@@ -33,10 +33,8 @@ struct FeedForward_Network {
   FeedForward_Network() {
     weights_inputToHidden = arma::Mat<float>(input_size, hidden_size);
     weights_hiddenToOutput = arma::Mat<float>(hidden_size, output_size);
-    activation_input = arma::Mat<float>(input_size, 1);
-    activation_output = arma::Mat<float>(output_size, 1);
-    activation_hidden = arma::Mat<float>(hidden_size, 1);
   }
+
   arma::Mat<float> weights_inputToHidden;
   arma::Mat<float> weights_hiddenToOutput;
 
