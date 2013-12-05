@@ -6,6 +6,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
 add_definitions("-g")
 add_definitions("-Wall")
 add_definitions("-std=c++11")
+add_definitions("-O1")
 
 add_executable(tests tests.cpp main.cpp)
 target_link_libraries(tests armadillo)

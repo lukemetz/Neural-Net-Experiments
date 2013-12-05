@@ -1,3 +1,5 @@
+#pragma once
+
 #include <armadillo>
 #include <algorithm>
 #include <random>
@@ -33,10 +35,15 @@ struct FeedForward_Network {
   FeedForward_Network() {
     weights_inputToHidden = arma::Mat<float>(input_size, hidden_size);
     weights_hiddenToOutput = arma::Mat<float>(hidden_size, output_size);
+    last_weights_inputToHidden = arma::Mat<float>(input_size, hidden_size);
+    last_weights_hiddenToOutput = arma::Mat<float>(hidden_size, output_size);
   }
 
   arma::Mat<float> weights_inputToHidden;
   arma::Mat<float> weights_hiddenToOutput;
+
+  arma::Mat<float> last_weights_inputToHidden;
+  arma::Mat<float> last_weights_hiddenToOutput;
 
   arma::Mat<float> activation_input;
   arma::Mat<float> activation_hidden;
@@ -73,6 +80,9 @@ void randomize(FeedForward_Network<input_size, hidden_size, output_size, activat
 
   network.weights_inputToHidden.imbue([&]() {return distribution(generator);});
   network.weights_hiddenToOutput.imbue([&]() {return distribution(generator);});
+  //TODO does this make sense?
+  network.last_weights_inputToHidden.imbue([&]() {return distribution(generator);});
+  network.last_weights_hiddenToOutput.imbue([&]() {return distribution(generator);});
 }
 
 template <typename arma_t, int input_size, int hidden_size, int output_size,
@@ -85,9 +95,17 @@ void backprop(FeedForward_Network<input_size, hidden_size, output_size, activati
 
   arma::Mat<float> hidden_deltas (hidden_size , network.activation_output.n_cols);
   hidden_deltas = (network.weights_hiddenToOutput * output_deltas) % activation::activation_dir(network.activation_hidden);
-  network.weights_hiddenToOutput += learning_rate * network.activation_hidden * output_deltas.t();
 
-  network.weights_inputToHidden += learning_rate * network.activation_input * hidden_deltas.t();
+  float momentum = 0.8f;
+  arma::Mat<float> delta_weights_hiddenToOutput = (1 - momentum) * learning_rate * network.activation_hidden * output_deltas.t() +
+    momentum * (network.weights_hiddenToOutput - network.last_weights_hiddenToOutput);
+  network.last_weights_hiddenToOutput = network.weights_hiddenToOutput;
+  network.weights_hiddenToOutput += delta_weights_hiddenToOutput;
+
+  arma::Mat<float> delta_weights_inputToHidden = (1 - momentum) * learning_rate * network.activation_input * hidden_deltas.t() +
+    momentum * (network.weights_inputToHidden - network.last_weights_inputToHidden);
+  network.last_weights_inputToHidden = network.weights_inputToHidden;
+  network.weights_inputToHidden += delta_weights_inputToHidden;
 }
 
 template <typename arma_t, int input_size, int hidden_size, int output_size,
@@ -109,4 +127,16 @@ arma::Mat<float> predict(FeedForward_Network<input_size, hidden_size, output_siz
     arma::Mat<float> input) {
   calculate_activation(network, input);
   return network.activation_output;
+}
+
+inline double classify_percent_score(arma::Mat<float> result, arma::Mat<float> correct) {
+  assert(result.n_cols == correct.n_cols);
+  int num_correct = 0;
+  for (int i=0; i < result.n_rows; ++i) {
+    auto sort_vec = arma::sort_index(result.row(i), 1);
+    if (correct.row(i)[sort_vec[0]] == 1) {
+      num_correct += 1;
+    }
+  }
+  return static_cast<float>(num_correct) / static_cast<float>(result.n_rows);
 }
