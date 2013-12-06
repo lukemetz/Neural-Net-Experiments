@@ -80,11 +80,12 @@ void randomize(FeedForward_Network<activation, error>& network) {
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0, .01);
 
-  network.weights_inputToHidden.imbue([&]() {return distribution(generator);});
-  network.weights_hiddenToOutput.imbue([&]() {return distribution(generator);});
+  auto random_num = [&]() {return distribution(generator);};
+  network.weights_inputToHidden.imbue(random_num);
+  network.weights_hiddenToOutput.imbue(random_num);
   //TODO does this make sense?
-  network.last_weights_inputToHidden.imbue([&]() {return distribution(generator);});
-  network.last_weights_hiddenToOutput.imbue([&]() {return distribution(generator);});
+  network.last_weights_inputToHidden.imbue(random_num);
+  network.last_weights_hiddenToOutput.imbue(random_num);
 }
 
 template <typename arma_t, typename activation, typename error>
