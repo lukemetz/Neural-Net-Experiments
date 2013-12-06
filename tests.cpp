@@ -31,7 +31,7 @@ void check_xor(model_t f) {
 }
 
 TEST(FeedForward_Network, reasonable_results_for_array_xor) {
-  FeedForward_Network<2, 10, 2> f;
+  FeedForward_Network<> f(2, 10, 2);
   randomize(f);
 
   const int num_rows = 10000;
