@@ -1,4 +1,6 @@
 #include "net.hpp"
+#include "net_cpu.hpp"
+
 #include <armadillo>
 #include <iostream>
 
