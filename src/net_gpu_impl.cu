@@ -35,16 +35,11 @@ void copy_matrix_with_gpu_ptr(Raw_Matrix & dst, Raw_Matrix & src) {
 
 Raw_FeedForward_Network * network_to_gpu(Raw_FeedForward_Network & network) {
   Raw_FeedForward_Network h_network = network;
-  
-  //copy_matrix_with_gpu_ptr(h_network.weights_inputToHidden, network.weights_inputToHidden);
-  cudaMalloc((void **) &(h_network.weights_inputToHidden.data),
-      matrix_size(h_network.weights_inputToHidden));
 
-  cudaMemcpy(h_network.weights_inputToHidden.data, h_network.weights_inputToHidden.data,
-      matrix_size(h_network.weights_inputToHidden), cudaMemcpyHostToDevice);
+  copy_matrix_with_gpu_ptr(h_network.weights_inputToHidden, network.weights_inputToHidden);
 
   copy_matrix_with_gpu_ptr(h_network.weights_hiddenToOutput, network.weights_hiddenToOutput);
-  
+
   copy_matrix_with_gpu_ptr(h_network.activation_input, network.activation_input);
   copy_matrix_with_gpu_ptr(h_network.activation_hidden, network.activation_hidden);
   copy_matrix_with_gpu_ptr(h_network.activation_output, network.activation_output);
