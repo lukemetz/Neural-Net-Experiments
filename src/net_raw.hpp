@@ -4,6 +4,9 @@ struct Raw_Matrix {
   int n_rows;
   int n_cols;
   float * data;
+  inline float & at(int row, int col) {
+    return data[row + col * n_rows];
+  }
 };
 
 struct Raw_FeedForward_Network {

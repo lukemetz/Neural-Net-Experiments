@@ -46,3 +46,22 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   ASSERT_EQ(f.activation_hidden[4], 4);
   ASSERT_EQ(f.activation_output[5], 5);
 }
+
+TEST(raw_matrix, Raw_Matrix_set_element) {
+  arma::Mat<float> matrix(3, 4);
+  for (int i=0; i < 3*4; i++) {
+    matrix[i] = i;
+  }
+  Raw_Matrix raw_mat = to_raw(matrix);
+  ASSERT_EQ(0, raw_mat.data[0]);
+  ASSERT_EQ(1, raw_mat.data[1]);
+  ASSERT_EQ(2, raw_mat.data[2]);
+
+  ASSERT_EQ(matrix.at(0,1), raw_mat.at(0, 1));
+  ASSERT_EQ(matrix.at(1,1), raw_mat.at(1, 1));
+
+  raw_mat.at(1, 3) = 100;
+  arma::Mat<float> re_mat = from_raw(raw_mat);
+  ASSERT_EQ(100, re_mat.at(1, 3));
+
+}
