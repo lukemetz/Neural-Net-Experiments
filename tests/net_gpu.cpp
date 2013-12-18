@@ -163,5 +163,4 @@ TEST(net_gpu, predict) {
   ASSERT_NEAR(raw_net.activation_output.at(0,0), 0.62, .1);
   ASSERT_NEAR(raw_net.activation_output.at(1,0), 0.57, .1);
   ASSERT_NEAR(raw_net.activation_output.at(2,0), 0.62, .1);
-
 }
