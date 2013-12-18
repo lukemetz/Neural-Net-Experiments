@@ -2,6 +2,7 @@
 #include <host_config.h>
 #include <iostream>
 #include <stdio.h>
+#include "functions.hpp"
 
 inline size_t matrix_size(const Raw_Matrix & m) {
   return sizeof(float) * m.n_rows * m.n_cols;
@@ -33,8 +34,9 @@ void copy_matrix_with_gpu_ptr(Raw_Matrix & dst, Raw_Matrix & src) {
   cudaMemcpy(dst.data, src.data, matrix_size(src), cudaMemcpyHostToDevice);
 }
 
-Raw_FeedForward_Network * network_to_gpu(Raw_FeedForward_Network & network) {
-  Raw_FeedForward_Network h_network = network;
+template<typename activation, typename error>
+Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Network<activation, error> & network) {
+  Raw_FeedForward_Network<activation, error> h_network = network;
 
   copy_matrix_with_gpu_ptr(h_network.weights_inputToHidden, network.weights_inputToHidden);
 
@@ -44,18 +46,19 @@ Raw_FeedForward_Network * network_to_gpu(Raw_FeedForward_Network & network) {
   copy_matrix_with_gpu_ptr(h_network.activation_hidden, network.activation_hidden);
   copy_matrix_with_gpu_ptr(h_network.activation_output, network.activation_output);
 
-  Raw_FeedForward_Network * d_network;
-  cudaMalloc((void **)&d_network, sizeof(Raw_FeedForward_Network));
-  cudaMemcpy(d_network, &h_network, sizeof(Raw_FeedForward_Network), cudaMemcpyHostToDevice);
+  Raw_FeedForward_Network<activation, error> * d_network;
+  cudaMalloc((void **)&d_network, sizeof(Raw_FeedForward_Network<activation, error>));
+  cudaMemcpy(d_network, &h_network, sizeof(Raw_FeedForward_Network<activation, error>), cudaMemcpyHostToDevice);
 
   return d_network;
 }
 
-void network_to_cpu(Raw_FeedForward_Network * d_network,
-    Raw_FeedForward_Network & h_network) {
-  Raw_FeedForward_Network orig_address_network = h_network;
-  cudaMemcpy(&h_network, d_network, sizeof(Raw_FeedForward_Network), cudaMemcpyDeviceToHost);
-  Raw_FeedForward_Network gpu_address = h_network;
+template<typename activation, typename error>
+void network_to_cpu(Raw_FeedForward_Network<activation, error> * d_network,
+    Raw_FeedForward_Network<activation, error> & h_network) {
+  Raw_FeedForward_Network<activation, error> orig_address_network = h_network;
+  cudaMemcpy(&h_network, d_network, sizeof(Raw_FeedForward_Network<activation, error>), cudaMemcpyDeviceToHost);
+  Raw_FeedForward_Network<activation, error> gpu_address = h_network;
 
   h_network.weights_inputToHidden.data = orig_address_network.weights_inputToHidden.data;
   h_network.weights_hiddenToOutput.data = orig_address_network.weights_hiddenToOutput.data;
@@ -80,25 +83,73 @@ void network_to_cpu(Raw_FeedForward_Network * d_network,
 }
 
 
-__global__ void kernel_raw_predict(Raw_FeedForward_Network * d_network, Raw_Matrix * input, Raw_Matrix * output) {
-  printf ("Hello from inside kernel %d\n", blockIdx.x);
+const int block_size = 64;
+
+template<typename activation, typename error>
+__global__ void kernel_calculate_hidden_activations(Raw_FeedForward_Network<activation, error> * d_network) {
+  
+  Raw_Matrix & prior_activation = d_network->activation_input;
+  Raw_Matrix & post_activation = d_network->activation_hidden;
+  Raw_Matrix & weights = d_network->weights_inputToHidden;
+  
+  int index = blockIdx.x * block_size + threadIdx.x;
+  if (index >= post_activation.n_rows * prior_activation.n_cols) {
+    return;
+  }
+  int on_activation= index / prior_activation.n_rows;
+  int on_trial= index % post_activation.n_rows;
+  post_activation.at(on_activation, on_trial) = 0;
+  for (int i=0; i < weights.n_rows; ++i) {
+    post_activation.at(on_trial, on_activation) += weights.at(i, on_activation) * prior_activation.at(on_trial, i);
+  }
+  post_activation.at(on_trial, on_activation) = activation::activation(post_activation.at(on_trial, on_activation));
 }
 
-Raw_Matrix raw_predict_gpu(Raw_FeedForward_Network & network, Raw_Matrix & input) {
-  /*
-  Raw_FeedForward_Network * d_network = to_gpu(network);
-  Raw_Matrix * d_output;
-  cudaMalloc((void *jjj*) &d_output, sizeof(Raw_Matrix));
-  Raw_Matrix * d_input  = malloc_Matrix(input);
-  cudaMalloc((void **) &d_output->data, sizeof(float) * network.output_size * input.n_rows);
+template<typename activation, typename error>
+__global__ void kernel_calculate_output_activations(Raw_FeedForward_Network<activation, error> * d_network) {
 
-  kernel_raw_predict<<<input.n_rows, 1>>>(d_network, d_input, d_output);
-  */
-  Raw_Matrix r;
-  return r;
+  Raw_Matrix & prior_activation = d_network->activation_hidden;
+  Raw_Matrix & post_activation = d_network->activation_output;
+  Raw_Matrix & weights = d_network->weights_hiddenToOutput;
+  int index = blockIdx.x * block_size + threadIdx.x;
+  if (index >= post_activation.n_rows * prior_activation.n_cols) {
+    return;
+  }
+  int on_activation= index / prior_activation.n_rows;
+  int on_trial= index % post_activation.n_rows;
+  post_activation.at(on_activation, on_trial) = 0;
+  for (int i=0; i < weights.n_rows; ++i) {
+    post_activation.at(on_trial, on_activation) += weights.at(i, on_activation) * prior_activation.at(on_trial, i);
+  }
+  post_activation.at(on_trial, on_activation) = activation::activation(post_activation.at(on_trial, on_activation));
+
 }
 
-void raw_train_batch_gpu(Raw_FeedForward_Network & network, Raw_Matrix & inputs,
-    Raw_Matrix & targets, float learning_rate, int batch_size) {
+template<typename activation, typename error>
+__global__ void kernel_set_input_activations(Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * input) {
 
+  int index = blockIdx.x * block_size + threadIdx.x;
+  int num_trials = input->n_rows;
+  int feature_size = input->n_cols;
+  if (index >= feature_size * num_trials) {
+    return;
+  }
+  int on_trial = index / input->n_cols;
+  int on_activation = index % input->n_cols;
+
+  d_network->activation_input.at(on_trial, on_activation) = input->at(on_trial, on_activation);
 }
+
+template<typename activation, typename error>
+void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size, Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_input)
+{
+  kernel_set_input_activations<<<1 + num_trials * input_size / block_size, block_size>>>(d_network, d_input);
+  kernel_calculate_hidden_activations<<<1 + num_trials * hidden_size / block_size, block_size>>>(d_network);
+  kernel_calculate_output_activations<<<1 + num_trials * output_size / block_size, block_size>>>(d_network);
+}
+
+template Raw_FeedForward_Network<Logistic, Squared_Error> * network_to_gpu(Raw_FeedForward_Network<Logistic, Squared_Error> & source);
+template void network_to_cpu(Raw_FeedForward_Network<Logistic, Squared_Error> * d_network,
+    Raw_FeedForward_Network<Logistic, Squared_Error> & h_network);
+
+template void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size, Raw_FeedForward_Network<Logistic, Squared_Error> * d_network, Raw_Matrix * d_input);

@@ -11,7 +11,7 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   f.activation_input[4] = 4;
   f.activation_input[5] = 5;
 
-  Raw_FeedForward_Network raw = convert_to_raw(f);
+  Raw_FeedForward_Network<> raw = convert_to_raw(f);
   ASSERT_EQ(f.input_size, raw.input_size);
   ASSERT_EQ(f.output_size, raw.output_size);
   ASSERT_EQ(f.hidden_size, raw.hidden_size);

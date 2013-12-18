@@ -20,7 +20,13 @@ add_definitions("-std=c++11")
 add_definitions("-O1")
 
 cuda_compile(CUDA_O src/net_gpu_impl.cu)
-cuda_add_executable(tests tests/net_cpu.cpp tests/main.cpp ${CUDA_O} tests/net_gpu.cpp tests/net_raw_utils.cpp)
+cuda_add_executable(tests
+  tests/net_cpu.cpp
+  tests/main.cpp
+  tests/net.cpp
+  ${CUDA_O}
+  tests/net_gpu.cpp
+  tests/net_raw_utils.cpp)
 
 target_link_libraries(tests armadillo )
 target_link_libraries(tests gtest)

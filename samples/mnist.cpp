@@ -47,10 +47,10 @@ int main(int argc, char * argv[]) {
     train_batch(f, data.cols(output_cols, data.n_cols - 1).rows(0, n_rows-1), data.cols(0, output_cols-1), 0.03f, 10);
     std::cout << "start score" << std::endl;
     arma::Mat<float> result = predict(f, data.cols(output_cols, data.n_cols-1).rows(0, n_rows-1));
-    std::cout << "Score: " << classify_percent_score(result.t(), data.cols(0, output_cols-1)) << std::endl;
+    std::cout << "Score: " << classify_percent_score(result, data.cols(0, output_cols-1)) << std::endl;
 
     result = predict(f, test);
-    std::cout << "TestS: " << classify_percent_score(result.t(), test_labels) << std::endl;
+    std::cout << "TestS: " << classify_percent_score(result, test_labels) << std::endl;
     std::cout << "Shuffling" << std::endl;
     data = shuffle(data);
   }

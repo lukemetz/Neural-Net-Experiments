@@ -13,8 +13,8 @@ inline Raw_Matrix to_raw(arma::Mat<float> & mat) {
 }
 
 template <typename activation, typename error>
-inline Raw_FeedForward_Network convert_to_raw(FeedForward_Network<activation, error> & network) {
-  Raw_FeedForward_Network raw;
+inline Raw_FeedForward_Network<activation, error> convert_to_raw(FeedForward_Network<activation, error> & network) {
+  Raw_FeedForward_Network<activation, error> raw;
   raw.input_size = network.input_size;
   raw.hidden_size = network.hidden_size;
   raw.output_size = network.output_size;
@@ -36,7 +36,7 @@ inline arma::Mat<float> from_raw(const Raw_Matrix & raw) {
 }
 
 template <typename activation, typename error>
-inline void update_from_raw(FeedForward_Network<activation, error> & network, const Raw_FeedForward_Network &raw) {
+inline void update_from_raw(FeedForward_Network<activation, error> & network, const Raw_FeedForward_Network<activation, error> &raw) {
   network.input_size = raw.input_size;
   network.hidden_size = raw.hidden_size;
   network.output_size = raw.output_size;

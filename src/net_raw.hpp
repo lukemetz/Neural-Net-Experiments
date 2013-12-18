@@ -1,14 +1,19 @@
 #pragma once
+#include "functions.hpp"
 
 struct Raw_Matrix {
   int n_rows;
   int n_cols;
   float * data;
+  #ifdef __NVCC__
+  __device__
+  #endif
   inline float & at(int row, int col) {
     return data[row + col * n_rows];
   }
 };
 
+template <typename activation = Logistic, typename error = Squared_Error>
 struct Raw_FeedForward_Network {
   int input_size;
   int hidden_size;

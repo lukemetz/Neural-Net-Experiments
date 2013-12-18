@@ -44,19 +44,19 @@ template <typename arma_t, typename activation, typename error>
 void backprop(FeedForward_Network<activation, error> &network,
     arma_t target, float learning_rate = 0.8f) {
   //Calculate deltas
-  arma::Mat<float> output_deltas(network.output_size, network.activation_output.n_cols);
-  output_deltas = error::error_dir(target.t(), network.activation_output) % activation::activation_dir(network.activation_output);
+  arma::Mat<float> output_deltas(network.activation_output.n_rows, network.output_size);
+  output_deltas = error::error_dir(target, network.activation_output) % activation::activation_dir(network.activation_output);
 
-  arma::Mat<float> hidden_deltas (network.hidden_size , network.activation_output.n_cols);
-  hidden_deltas = (network.weights_hiddenToOutput * output_deltas) % activation::activation_dir(network.activation_hidden);
+  arma::Mat<float> hidden_deltas (network.activation_output.n_cols, network.hidden_size);
+  hidden_deltas = (output_deltas * network.weights_hiddenToOutput.t()) % activation::activation_dir(network.activation_hidden);
 
   float momentum = 0.8f;
-  arma::Mat<float> delta_weights_hiddenToOutput = (1 - momentum) * learning_rate * network.activation_hidden * output_deltas.t() +
+  arma::Mat<float> delta_weights_hiddenToOutput = (1 - momentum) * learning_rate * (output_deltas.t() * network.activation_hidden).t() +
     momentum * (network.weights_hiddenToOutput - network.last_weights_hiddenToOutput);
   network.last_weights_hiddenToOutput = network.weights_hiddenToOutput;
   network.weights_hiddenToOutput += delta_weights_hiddenToOutput;
 
-  arma::Mat<float> delta_weights_inputToHidden = (1 - momentum) * learning_rate * network.activation_input * hidden_deltas.t() +
+  arma::Mat<float> delta_weights_inputToHidden = (1 - momentum) * learning_rate * (hidden_deltas.t() * network.activation_input).t() +
     momentum * (network.weights_inputToHidden - network.last_weights_inputToHidden);
   network.last_weights_inputToHidden = network.weights_inputToHidden;
   network.weights_inputToHidden += delta_weights_inputToHidden;
@@ -65,12 +65,12 @@ void backprop(FeedForward_Network<activation, error> &network,
 template <typename arma_t, typename activation, typename error>
 void calculate_activation(FeedForward_Network<activation, error>& network,
     arma_t input) {
-  network.activation_input = input.t();
+  network.activation_input = input;
 
-  network.activation_hidden = (network.weights_inputToHidden.t() * network.activation_input);
+  network.activation_hidden = network.activation_input * network.weights_inputToHidden;
   network.activation_hidden = activation::activation(network.activation_hidden);
 
-  network.activation_output = network.weights_hiddenToOutput.t() * network.activation_hidden;
+  network.activation_output = network.activation_hidden * network.weights_hiddenToOutput;
   network.activation_output = activation::activation(network.activation_output);
 }
 
