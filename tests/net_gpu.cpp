@@ -32,6 +32,8 @@ TEST(gpu_utils, raw_net_to_gpu_and_back) {
     f.activation_input[i] = i*1;
     f.activation_hidden[i] = i*2;
     f.activation_output[i] = i*3;
+    f.output_deltas[i] = i * 4;
+    f.hidden_deltas[i] = i * 5;
   }
 
   Raw_FeedForward_Network<> raw_net = convert_to_raw(f);
@@ -69,10 +71,13 @@ TEST(gpu_utils, raw_net_to_gpu_and_back) {
   raw_net.weights_inputToHidden.n_rows = -1;
   raw_net.weights_inputToHidden.n_cols = -1;
 
+
   for (int i = 0; i < 4; ++i) {
     raw_net.activation_input.data[i] = -1;
     raw_net.activation_hidden.data[i] = -1;
     raw_net.activation_output.data[i] = -1;
+    raw_net.output_deltas.data[i] = -1;
+    raw_net.hidden_deltas.data[i] = -1;
   }
 
   //re copy back from gpu
@@ -98,10 +103,12 @@ TEST(gpu_utils, raw_net_to_gpu_and_back) {
     ASSERT_FLOAT_EQ(raw_net.activation_input.data[i], i*1.f);
     ASSERT_FLOAT_EQ(raw_net.activation_hidden.data[i], i*2.f);
     ASSERT_FLOAT_EQ(raw_net.activation_output.data[i], i*3.f);
+    ASSERT_FLOAT_EQ(raw_net.output_deltas.data[i], i*4.f);
+    ASSERT_FLOAT_EQ(raw_net.hidden_deltas.data[i], i*5.f);
   }
 }
 
-TEST(net_gpu, predict) {
+TEST(net_gpu, calculate_activation) {
   FeedForward_Network<> f(2, 2, 1);
   f.resize_activation(3);
   f.weights_inputToHidden.at(0,0) = -1;
@@ -163,4 +170,57 @@ TEST(net_gpu, predict) {
   ASSERT_NEAR(raw_net.activation_output.at(0,0), 0.62, .1);
   ASSERT_NEAR(raw_net.activation_output.at(1,0), 0.57, .1);
   ASSERT_NEAR(raw_net.activation_output.at(2,0), 0.62, .1);
+}
+
+TEST(net_gpu, back_prop) {
+  FeedForward_Network<> f(2, 2, 1);
+  f.resize_activation(3);
+  f.weights_inputToHidden.at(0,0) = -1;
+  f.weights_inputToHidden.at(1,0) = -.1;
+  f.weights_inputToHidden.at(0,1) = .1;
+  f.weights_inputToHidden.at(1,1) = 1;
+
+  f.weights_hiddenToOutput.at(0,0) = 1;
+  f.weights_hiddenToOutput.at(1,0) = 0;
+
+  Raw_FeedForward_Network<> raw_net = convert_to_raw(f);
+  Raw_FeedForward_Network<> * d_net = network_to_gpu(raw_net);
+
+  arma::Mat<float> inputs(3, 2);
+  inputs.at(0,0) = 0;
+  inputs.at(0,1) = 0;
+  inputs.at(1,0) = 1;
+  inputs.at(1,1) = 0;
+  inputs.at(2,0) = 0;
+  inputs.at(2,1) = 1;
+
+  arma::Mat<float> targets(3,1);
+  targets.at(0,0) = 1;
+  targets.at(1,0) = 1;
+  targets.at(2,0) = 0;
+
+  Raw_Matrix raw_inputs = to_raw(inputs);
+  Raw_Matrix * d_inputs = matrix_to_gpu(raw_inputs);
+
+  int num_trials = 3;
+  int input_size = 2;
+  int hidden_size = 2;
+  int output_size = 1;
+  calculate_activation(num_trials, input_size, hidden_size, output_size, d_net, d_inputs);
+
+  Raw_Matrix raw_targets = to_raw(targets);
+  Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
+
+
+  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
+  network_to_cpu(d_net, raw_net);
+
+  //Weights calculated from CPU implementation
+  ASSERT_NEAR(1.8007, raw_net.weights_hiddenToOutput.at(0,0), .1);
+  ASSERT_NEAR(-0.0011, raw_net.weights_hiddenToOutput.at(1,0), .1);
+
+  ASSERT_NEAR(-1.7962, raw_net.weights_inputToHidden.at(0,0), .1);
+  ASSERT_NEAR(-0.1865, raw_net.weights_inputToHidden.at(1,0), .1);
+  ASSERT_NEAR(0.1800, raw_net.weights_inputToHidden.at(0,1), .1);
+  ASSERT_NEAR(1.800, raw_net.weights_inputToHidden.at(1,1), .1);
 }

@@ -28,6 +28,9 @@ inline Raw_FeedForward_Network<activation, error> convert_to_raw(FeedForward_Net
   raw.activation_input = to_raw(network.activation_input);
   raw.activation_hidden = to_raw(network.activation_hidden);
   raw.activation_output = to_raw(network.activation_output);
+
+  raw.output_deltas = to_raw(network.output_deltas);
+  raw.hidden_deltas = to_raw(network.hidden_deltas);
   return raw;
 }
 
@@ -50,4 +53,8 @@ inline void update_from_raw(FeedForward_Network<activation, error> & network, co
   network.activation_input = from_raw(raw.activation_input);
   network.activation_hidden = from_raw(raw.activation_hidden);
   network.activation_output = from_raw(raw.activation_output);
+
+  network.output_deltas = from_raw(raw.output_deltas);
+  network.hidden_deltas = from_raw(raw.hidden_deltas);
+
 }

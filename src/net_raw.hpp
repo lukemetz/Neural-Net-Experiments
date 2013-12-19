@@ -28,4 +28,7 @@ struct Raw_FeedForward_Network {
   Raw_Matrix activation_input;
   Raw_Matrix activation_hidden;
   Raw_Matrix activation_output;
+
+  Raw_Matrix output_deltas;
+  Raw_Matrix hidden_deltas;
 };

@@ -17,12 +17,18 @@ struct FeedForward_Network {
     activation_input = arma::Mat<float>(1, input_size, arma::fill::zeros);
     activation_hidden = arma::Mat<float>(1, hidden_size, arma::fill::zeros);
     activation_output = arma::Mat<float>(1, output_size, arma::fill::zeros);
+
+    output_deltas = arma::Mat<float>(1, output_size);
+    hidden_deltas = arma::Mat<float>(1, hidden_size);
   }
 
   inline void resize_activation(int num_trials) {
     activation_input = arma::Mat<float>(num_trials, input_size, arma::fill::zeros);
     activation_hidden = arma::Mat<float>(num_trials, hidden_size, arma::fill::zeros);
     activation_output = arma::Mat<float>(num_trials, output_size, arma::fill::zeros);
+
+    output_deltas = arma::Mat<float>(num_trials, output_size);
+    hidden_deltas = arma::Mat<float>(num_trials, hidden_size);
   }
 
   int input_size = 0;
@@ -38,4 +44,9 @@ struct FeedForward_Network {
   arma::Mat<float> activation_input;
   arma::Mat<float> activation_hidden;
   arma::Mat<float> activation_output;
+
+  //for backprop
+  //TODO move these to a trainer of somekind
+  arma::Mat<float> output_deltas;
+  arma::Mat<float> hidden_deltas;
 };

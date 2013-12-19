@@ -10,6 +10,8 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   f.activation_input[3] = 3;
   f.activation_input[4] = 4;
   f.activation_input[5] = 5;
+  f.output_deltas[3] = 2;
+  f.hidden_deltas[3] = 2;
 
   Raw_FeedForward_Network<> raw = convert_to_raw(f);
   ASSERT_EQ(f.input_size, raw.input_size);
@@ -23,6 +25,9 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   ASSERT_EQ(raw.activation_hidden.data[3], f.activation_hidden[3]);
   ASSERT_EQ(raw.activation_output.data[3], f.activation_output[3]);
 
+  ASSERT_EQ(raw.output_deltas.data[3], f.output_deltas[3]);
+  ASSERT_EQ(raw.hidden_deltas.data[3], f.hidden_deltas[3]);
+
 
   raw.input_size = 11;
   raw.output_size = 21;
@@ -32,6 +37,9 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   raw.activation_input.data[3] = 3;
   raw.activation_hidden.data[4] = 4;
   raw.activation_output.data[5] = 5;
+
+  raw.output_deltas.data[3] = 5;
+  raw.hidden_deltas.data[3] = 5;
 
   update_from_raw(f, raw);
 
@@ -45,6 +53,8 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   ASSERT_EQ(f.activation_input[3], 3);
   ASSERT_EQ(f.activation_hidden[4], 4);
   ASSERT_EQ(f.activation_output[5], 5);
+  ASSERT_EQ(f.output_deltas[3], 5);
+  ASSERT_EQ(f.hidden_deltas[3], 5);
 }
 
 TEST(raw_matrix, Raw_Matrix_set_element) {
