@@ -77,7 +77,7 @@ TEST(FeedForward_Network, reasonable_results_batch_train_xor) {
   }
 
   float learning_rate = 0.8f;
-  int batch_size = 2;
+  int batch_size = 1;
   train_batch(f, features, target, learning_rate, batch_size);
   check_xor(f);
 }

@@ -20,10 +20,15 @@ void train_online(FeedForward_Network<activation, error>& network,
 template <typename activation, typename error>
 void train_batch(FeedForward_Network<activation, error>& network,
     arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate, int batch_size) {
+    network.resize_activation(batch_size);
+
     int batches_in_train = targets.n_rows/batch_size - 1;
+    //batches_in_train = 1000;
     for (int i = 0; i < batches_in_train; ++i) {
-      calculate_activation(network, inputs.rows(i*batch_size, (i+1) * batch_size));
-      backprop(network, targets.rows(i*batch_size, (i+1) * batch_size), learning_rate);
+      arma::Mat<float> input_slice = inputs.rows(i*batch_size, (i+1) * batch_size-1);
+      calculate_activation(network, input_slice);
+      arma::Mat<float> target_slice = targets.rows(i*batch_size, (i+1) * batch_size-1);
+      backprop(network, target_slice, learning_rate);
     }
 }
 
@@ -49,6 +54,9 @@ void backprop(FeedForward_Network<activation, error> &network,
 
   arma::Mat<float> hidden_deltas (network.activation_output.n_cols, network.hidden_size);
   hidden_deltas = (output_deltas * network.weights_hiddenToOutput.t()) % activation::activation_dir(network.activation_hidden);
+
+  network.hidden_deltas = hidden_deltas;
+  network.output_deltas = output_deltas;
 
   float momentum = 0.8f;
   arma::Mat<float> delta_weights_hiddenToOutput = (1 - momentum) * learning_rate * (output_deltas.t() * network.activation_hidden).t() +

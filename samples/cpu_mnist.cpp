@@ -1,6 +1,5 @@
 #include "net.hpp"
 #include "net_cpu.hpp"
-#include "net_gpu.hpp"
 
 #include <armadillo>
 #include <iostream>
@@ -9,7 +8,7 @@ int main(int argc, char * argv[]) {
   arma::Mat<float> A;
   A.load("mnist.arma");
   A.shed_row(0); //remove header labels
-  const int n_rows = 40000;
+  const int n_rows = 400;
   const int output_cols = 10;
   const int test_num = 2000;
   arma::Mat<float> labels(n_rows, output_cols, arma::fill::zeros);
@@ -32,6 +31,7 @@ int main(int argc, char * argv[]) {
 
   std::cout << labels << std::endl;
   A.shed_col(0);
+
   A /= 256;
   A -= .5;
   arma::Mat<float> test = A.rows(n_rows, n_rows + test_num - 1);
@@ -45,9 +45,9 @@ int main(int argc, char * argv[]) {
   std::cout << "train" << std::endl;
   for (int i=0; i <80; i++) {
     std::cout << i << std::endl;
-    gpu_train_batch(f, data.cols(output_cols, data.n_cols - 1).rows(0, n_rows-1), data.cols(0, output_cols-1), 0.03f, 10);
+    train_batch(f, data.cols(output_cols, data.n_cols - 1).rows(0, n_rows-1), data.cols(0, output_cols-1), 0.03f, 10);
     std::cout << "start score" << std::endl;
-    arma::Mat<float> result = gpu_predict(f, data.cols(output_cols, data.n_cols-1).rows(0,n_rows-1));
+    arma::Mat<float> result = predict(f, data.cols(output_cols, data.n_cols-1).rows(0, n_rows-1));
     std::cout << "Score: " << classify_percent_score(result, data.cols(0, output_cols-1)) << std::endl;
 
     result = predict(f, test);

@@ -40,11 +40,11 @@ struct Logistic {
   template<typename U>
   #ifdef __NVCC__
   __device__ static inline U activation_dir(U k) {
-    return k * (1 - k);
+    return k * (1.0f - k);
   }
   #else
   static inline U activation_dir(U k) {
-    return k % (1 - k);
+    return k % (1.0f - k);
   }
   #endif
 };

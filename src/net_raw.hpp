@@ -1,6 +1,7 @@
 #pragma once
 #include "functions.hpp"
-
+#include <cassert>
+#include <stdio.h>
 struct Raw_Matrix {
   int n_rows;
   int n_cols;
@@ -9,6 +10,14 @@ struct Raw_Matrix {
   __device__
   #endif
   inline float & at(int row, int col) {
+    if (row >= n_rows && col >= n_cols) {
+    #ifdef __NVCC__
+      printf("GPU(%d, %d) \n", row, col);
+    #else
+      printf("(%d, %d) \n", row, col);
+    #endif
+    }
+    //assert(row < n_rows && col < n_cols);
     return data[row + col * n_rows];
   }
 };

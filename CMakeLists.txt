@@ -31,9 +31,11 @@ cuda_add_executable(tests
 target_link_libraries(tests armadillo )
 target_link_libraries(tests gtest)
 
-add_executable(mnist samples/mnist.cpp)
+cuda_add_executable(gpu_mnist samples/gpu_mnist.cpp ${CUDA_O})
+add_executable(cpu_mnist samples/cpu_mnist.cpp)
 include_directories(src)
-target_link_libraries(mnist armadillo)
+target_link_libraries(cpu_mnist armadillo)
+target_link_libraries(gpu_mnist armadillo)
 
 add_executable(convert_to_arma tools/convert_to_arma.cpp)
 target_link_libraries(convert_to_arma armadillo)

@@ -224,3 +224,195 @@ TEST(net_gpu, back_prop) {
   ASSERT_NEAR(0.1800, raw_net.weights_inputToHidden.at(0,1), .1);
   ASSERT_NEAR(1.800, raw_net.weights_inputToHidden.at(1,1), .1);
 }
+
+TEST(net_gpu, advanced_back_prop) {
+  int input_size = 2;
+  int hidden_size = 3;
+  int output_size = 2;
+  FeedForward_Network<> gpu(input_size, hidden_size, output_size);
+  FeedForward_Network<> cpu(input_size, hidden_size, output_size);
+  gpu.resize_activation(4);
+  cpu.resize_activation(4);
+
+  for (int j=0; j < 3; j++) {
+    for (int i=0; i < 2; i++) {
+      //gpu.weights_inputToHidden.at(i,j) = .1 * i - .1 * j;
+      //cpu.weights_inputToHidden.at(i,j) = .1 * i - .1 * j;
+
+      gpu.weights_inputToHidden.at(i,j) = 1 + i - 10*j;
+      cpu.weights_inputToHidden.at(i,j) = 1 + i - 10*j;
+      gpu.last_weights_inputToHidden.at(i,j) = 0;
+      cpu.last_weights_inputToHidden.at(i,j) = 0;
+
+      gpu.weights_hiddenToOutput.at(j, i) = -1 - i + 10*j;
+      cpu.weights_hiddenToOutput.at(j, i) = -1 -i + 10*j;
+      gpu.last_weights_hiddenToOutput.at(j, i) = 0;
+      cpu.last_weights_hiddenToOutput.at(j, i) = 0;
+    }
+  }
+  Raw_FeedForward_Network<> raw_net = convert_to_raw(gpu);
+  Raw_FeedForward_Network<> * d_net = network_to_gpu(raw_net);
+
+  int num_trials = 4;
+  arma::Mat<float> inputs(num_trials, 2);
+  inputs.at(0,0) = 0.2;
+  inputs.at(0,1) = 0.1;
+  inputs.at(1,0) = 1;
+  inputs.at(1,1) = .1;
+  inputs.at(2,0) = 0;
+  inputs.at(2,1) = 1;
+  inputs.at(3,0) = 0;
+  inputs.at(3,1) = 1;
+
+  arma::Mat<float> targets(num_trials,2);
+  targets.at(0,0) = 1;
+  targets.at(0,1) = 0;
+  targets.at(1,0) = 1;
+  targets.at(1,1) = .3;
+  targets.at(2,0) = 0;
+  targets.at(2,1) = 1;
+  targets.at(3,0) = 0;
+  targets.at(3,1) = 1;
+
+  Raw_Matrix raw_inputs = to_raw(inputs);
+  Raw_Matrix * d_inputs = matrix_to_gpu(raw_inputs);
+
+  calculate_activation(num_trials, input_size, hidden_size, output_size, d_net, d_inputs);
+
+  Raw_Matrix raw_targets = to_raw(targets);
+  Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
+
+
+  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
+  network_to_cpu(d_net, raw_net);
+
+  calculate_activation(cpu, inputs);
+  backprop(cpu, targets);
+
+
+  auto check_equal = [&](arma::Mat<float> A, arma::Mat<float> B) {
+    for (int x = 0; x < A.n_rows; x++) {
+      for (int y = 0; y < A.n_cols; y++) {
+        ASSERT_NEAR(A.at(x,y), B.at(x,y), .005f);
+      }
+    }
+  };
+  check_equal(cpu.activation_input, from_raw(raw_net.activation_input));
+  //std::cout << "activation_input" << std::endl << cpu.activation_input << std::endl << gpu.activation_input << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.activation_output, from_raw(raw_net.activation_output));
+  //std::cout << "activation_output" << std::endl << cpu.activation_output << std::endl << gpu.activation_output << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.activation_hidden, from_raw(raw_net.activation_hidden));
+  //std::cout << "activation_hidden" << std::endl << cpu.activation_hidden << std::endl << gpu.activation_hidden << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.weights_hiddenToOutput, from_raw(raw_net.weights_hiddenToOutput));
+  //std::cout << "weights_hiddenToOutput" << std::endl << cpu.weights_hiddenToOutput << std::endl << gpu.weights_hiddenToOutput << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.weights_inputToHidden, from_raw(raw_net.weights_inputToHidden));
+  //std::cout << "weights_inputToHidden" << std::endl << cpu.weights_inputToHidden << std::endl << gpu.weights_inputToHidden << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.last_weights_inputToHidden, from_raw(raw_net.last_weights_inputToHidden));
+  //std::cout << "last_weights_inputToHidden" << std::endl << cpu.last_weights_inputToHidden << std::endl << gpu.last_weights_inputToHidden << std::endl;
+  //std::cout << "====" << std::endl;
+  check_equal(cpu.last_weights_hiddenToOutput, from_raw(raw_net.last_weights_hiddenToOutput));
+  //std::cout << "last_weights_hiddenToOutput" << std::endl << cpu.last_weights_hiddenToOutput << std::endl << gpu.last_weights_hiddenToOutput << std::endl;
+  //std::cout << "====" << std::endl;
+}
+
+std::array<float, 2> gpu_xor_func(float x, float y) {
+  std::array<float, 2> res =  {{static_cast<float>((static_cast<bool>(x)^static_cast<bool>(y))),
+                               static_cast<float>(!(static_cast<bool>(x)^static_cast<bool>(y)))}};
+  return res;
+};
+
+template <typename model_t>
+void gpu_check_xor(model_t f) {
+  arma::Mat<float> result;
+
+  result = gpu_predict(f, {{0,0}});
+  EXPECT_GT(result[1], .9);
+  EXPECT_LT(result[0], .1);
+
+  result = gpu_predict(f, {{1,1}});
+  EXPECT_GT(result[1], .9);
+  EXPECT_LT(result[0], .1);
+
+  result = gpu_predict(f, {{0,1}});
+  EXPECT_LT(result[1], .1);
+  EXPECT_GT(result[0], .9);
+
+  result = gpu_predict(f, {{1,0}});
+  EXPECT_LT(result[1], .1);
+  EXPECT_GT(result[0], .9);
+}
+
+TEST(net_gpu, reasonable_results_batch_train_xor) {
+  FeedForward_Network<> gpu(2, 10, 2);
+  randomize(gpu);
+
+  FeedForward_Network<> cpu(2, 10, 2);
+  cpu.weights_inputToHidden = gpu.weights_inputToHidden;
+  cpu.weights_hiddenToOutput = gpu.weights_hiddenToOutput;
+
+  cpu.last_weights_inputToHidden = gpu.last_weights_inputToHidden;
+  cpu.last_weights_hiddenToOutput= gpu.last_weights_hiddenToOutput;
+  const int num_rows = 10000;
+  arma::Mat<float> features(num_rows, 2);
+  arma::Mat<float> target(num_rows, 2);
+
+  for (int z=0; z < num_rows/4; z++) {
+    for (int i=0; i<2; i++) {
+      for (int j=0; j<2; j++) {
+        int on_index = z*4+i*2+j;
+        features(on_index, 0) = i;
+        features(on_index, 1) = j;
+        target(on_index, 0) = gpu_xor_func(i,j)[0];
+        target(on_index, 1) = gpu_xor_func(i,j)[1];
+      }
+    }
+  }
+
+  float learning_rate = 0.8f;
+  int batch_size = 1;
+  gpu_train_batch(gpu, features, target, learning_rate, batch_size);
+  train_batch(cpu, features, target, learning_rate, batch_size);
+  gpu_check_xor(gpu);
+  gpu_check_xor(cpu);
+}
+
+TEST(net_gpu, reasonable_results_batch_train_xor_multipass) {
+  FeedForward_Network<> gpu(2, 10, 2);
+  randomize(gpu);
+
+  FeedForward_Network<> cpu(2, 10, 2);
+  cpu.weights_inputToHidden = gpu.weights_inputToHidden;
+  cpu.weights_hiddenToOutput = gpu.weights_hiddenToOutput;
+
+  cpu.last_weights_inputToHidden = gpu.last_weights_inputToHidden;
+  cpu.last_weights_hiddenToOutput= gpu.last_weights_hiddenToOutput;
+  const int num_rows = 100;
+  arma::Mat<float> features(num_rows, 2);
+  arma::Mat<float> target(num_rows, 2);
+
+  for (int z=0; z < num_rows/4; z++) {
+    for (int i=0; i<2; i++) {
+      for (int j=0; j<2; j++) {
+        int on_index = z*4+i*2+j;
+        features(on_index, 0) = i;
+        features(on_index, 1) = j;
+        target(on_index, 0) = gpu_xor_func(i,j)[0];
+        target(on_index, 1) = gpu_xor_func(i,j)[1];
+      }
+    }
+  }
+
+  for (int i=0; i < 100; i++) {
+    float learning_rate = 0.8f;
+    int batch_size = 1;
+    gpu_train_batch(gpu, features, target, learning_rate, batch_size);
+    train_batch(cpu, features, target, learning_rate, batch_size);
+  }
+  gpu_check_xor(gpu);
+  gpu_check_xor(cpu);
+}
