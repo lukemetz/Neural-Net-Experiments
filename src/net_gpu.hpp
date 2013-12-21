@@ -58,6 +58,7 @@ inline arma::Mat<float> gpu_predict(FeedForward_Network<activation, error>& netw
   int output_size = network.output_size;
 
   calculate_activation(num_trials, input_size, hidden_size, output_size, d_network, d_inputs);
+  free_gpu_matrix(d_inputs);
 
   network_to_cpu_free(d_network, raw_net);
   update_from_raw(network, raw_net);
