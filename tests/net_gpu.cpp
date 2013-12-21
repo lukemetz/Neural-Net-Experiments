@@ -326,6 +326,7 @@ std::array<float, 2> gpu_xor_func(float x, float y) {
   return res;
 };
 
+
 template <typename model_t>
 void gpu_check_xor(model_t f) {
   arma::Mat<float> result;
@@ -415,4 +416,66 @@ TEST(net_gpu, reasonable_results_batch_train_xor_multipass) {
   }
   gpu_check_xor(gpu);
   gpu_check_xor(cpu);
+}
+
+std::array<float, 2> gpu_complex_func(float x, float y) {
+  x /= 13;
+  y /= 13;
+  float r1 = x*x + y*y;
+  float r2 = x*y + x*y;
+  std::array<float, 2> res =  {{
+    r1,
+    r2
+  }};
+  return res;
+};
+
+TEST(net_gpu, reasonable_results_batch_train_xor_fail) {
+  int input_size =  2;
+  int output_size = 2;
+  FeedForward_Network<> gpu(input_size, 10, output_size);
+  randomize(gpu);
+
+  FeedForward_Network<> cpu(input_size, 10, output_size);
+  cpu.weights_inputToHidden = gpu.weights_inputToHidden;
+  cpu.weights_hiddenToOutput = gpu.weights_hiddenToOutput;
+  cpu.last_weights_inputToHidden = gpu.last_weights_inputToHidden;
+  cpu.last_weights_hiddenToOutput= gpu.last_weights_hiddenToOutput;
+
+  const int num_rows = 100;
+  arma::Mat<float> features(num_rows*100, input_size + output_size);
+
+  for (int z=0; z < num_rows; z++) {
+    int i = z % 10;
+    int j = z / 10;
+
+    features(z, 0) = j/10.f;
+    features(z, 1) = i/10.f;
+
+    features(z, input_size+0) = gpu_complex_func(i,j)[0];
+    features(z, input_size+1) = gpu_complex_func(i,j)[1];
+  }
+
+
+  for (int i=0; i < 30; i++) {
+    float learning_rate = 0.4f;
+    int batch_size = 20;
+    gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
+    train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
+    //train_batch(cpu, features, target.cols(5,6), learning_rate, batch_size);
+    arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
+    std::cout << "gpu:" << squared_diff(gpu_predict_data, features.cols(input_size,input_size+output_size-1)) << ", ";
+
+    arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));
+    std::cout << "cpu: " << squared_diff(cpu_predict_data, features.cols(input_size,input_size+output_size-1)) << std::endl;
+    features = shuffle(features);
+  }
+  arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
+  arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));
+  float squared_diff_gpu = squared_diff(gpu_predict_data, features.cols(input_size,input_size+output_size-1));
+  float squared_diff_cpu = squared_diff(cpu_predict_data, features.cols(input_size,input_size+output_size-1));
+
+
+  ASSERT_NEAR(squared_diff_gpu, squared_diff_cpu, 4.0f);
+
 }

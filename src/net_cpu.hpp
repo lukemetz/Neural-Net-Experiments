@@ -101,3 +101,8 @@ inline double classify_percent_score(arma::Mat<float> result, arma::Mat<float> c
   return static_cast<float>(num_correct) / static_cast<float>(result.n_rows);
 }
 
+inline float squared_diff(arma::Mat<float> result, arma::Mat<float> correct) {
+  assert(result.n_cols == correct.n_cols);
+  auto error_diff = correct - result;
+  return arma::accu(error_diff % error_diff);// / correct.n_rows;
+}
