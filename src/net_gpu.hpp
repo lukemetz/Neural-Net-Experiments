@@ -35,10 +35,12 @@ inline void gpu_train_batch(FeedForward_Network<activation, error>& network,
     Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
 
     backprop(num_trials, input_size, hidden_size, output_size, d_network, d_targets, learning_rate);
+    free_gpu_matrix(d_targets);
   }
 
-  network_to_cpu(d_network, raw_net);
+  network_to_cpu_free(d_network, raw_net);
   update_from_raw(network, raw_net);
+
 }
 
 template <typename activation, typename error>
@@ -57,7 +59,7 @@ inline arma::Mat<float> gpu_predict(FeedForward_Network<activation, error>& netw
 
   calculate_activation(num_trials, input_size, hidden_size, output_size, d_network, d_inputs);
 
-  network_to_cpu(d_network, raw_net);
+  network_to_cpu_free(d_network, raw_net);
   update_from_raw(network, raw_net);
   return network.activation_output;
 }

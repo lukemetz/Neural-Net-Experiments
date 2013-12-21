@@ -73,7 +73,7 @@ Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Netw
 }
 
 template<typename activation, typename error>
-void network_to_cpu(Raw_FeedForward_Network<activation, error> * d_network,
+void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d_network,
     Raw_FeedForward_Network<activation, error> & h_network) {
   Raw_FeedForward_Network<activation, error> orig_address_network = h_network;
   gpuErr(cudaMemcpy(&h_network, d_network, sizeof(Raw_FeedForward_Network<activation, error>), cudaMemcpyDeviceToHost));
@@ -92,32 +92,25 @@ void network_to_cpu(Raw_FeedForward_Network<activation, error> * d_network,
   h_network.output_deltas.data = orig_address_network.output_deltas.data;
   h_network.hidden_deltas.data = orig_address_network.hidden_deltas.data;
 
-  gpuErr(cudaMemcpy(h_network.weights_inputToHidden.data, gpu_address.weights_inputToHidden.data,
-      matrix_size(h_network.weights_inputToHidden), cudaMemcpyDeviceToHost));
-
-  gpuErr(cudaMemcpy(h_network.weights_hiddenToOutput.data, gpu_address.weights_hiddenToOutput.data,
-      matrix_size(h_network.weights_hiddenToOutput), cudaMemcpyDeviceToHost));
-
-  gpuErr(cudaMemcpy(h_network.last_weights_inputToHidden.data, gpu_address.last_weights_inputToHidden.data,
-      matrix_size(h_network.last_weights_inputToHidden), cudaMemcpyDeviceToHost));
-
-  gpuErr(cudaMemcpy(h_network.last_weights_hiddenToOutput.data, gpu_address.last_weights_hiddenToOutput.data,
-      matrix_size(h_network.last_weights_hiddenToOutput), cudaMemcpyDeviceToHost));
-
-  gpuErr(cudaMemcpy(h_network.activation_input.data, gpu_address.activation_input.data,
-      matrix_size(h_network.activation_input), cudaMemcpyDeviceToHost));
-
-  gpuErr(cudaMemcpy(h_network.activation_hidden.data, gpu_address.activation_hidden.data,
-      matrix_size(h_network.activation_hidden), cudaMemcpyDeviceToHost));
+#define copy_free(field) \
+  gpuErr(cudaMemcpy(h_network.field.data, gpu_address.field.data, \
+      matrix_size(h_network.field), cudaMemcpyDeviceToHost)); \
+  gpuErr(cudaFree(gpu_address.field.data));
   
-  gpuErr(cudaMemcpy(h_network.activation_output.data, gpu_address.activation_output.data,
-      matrix_size(h_network.activation_output), cudaMemcpyDeviceToHost));
+  copy_free(weights_inputToHidden);
+  copy_free(weights_hiddenToOutput);
 
-  gpuErr(cudaMemcpy(h_network.hidden_deltas.data, gpu_address.hidden_deltas.data,
-      matrix_size(h_network.hidden_deltas), cudaMemcpyDeviceToHost));
+  copy_free(last_weights_inputToHidden);
+  copy_free(last_weights_hiddenToOutput);
   
-  gpuErr(cudaMemcpy(h_network.output_deltas.data, gpu_address.output_deltas.data,
-      matrix_size(h_network.output_deltas), cudaMemcpyDeviceToHost));
+  copy_free(activation_input);
+  copy_free(activation_hidden);
+  copy_free(activation_output);
+  
+  copy_free(hidden_deltas);
+  copy_free(output_deltas);
+
+  gpuErr(cudaFree(d_network));
 }
 
 
@@ -329,7 +322,7 @@ void backprop(int num_trials, int input_size, int hidden_size, int output_size,
 }
 
 template Raw_FeedForward_Network<Logistic, Squared_Error> * network_to_gpu(Raw_FeedForward_Network<Logistic, Squared_Error> & source);
-template void network_to_cpu(Raw_FeedForward_Network<Logistic, Squared_Error> * d_network,
+template void network_to_cpu_free(Raw_FeedForward_Network<Logistic, Squared_Error> * d_network,
     Raw_FeedForward_Network<Logistic, Squared_Error> & h_network);
 
 template void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size, Raw_FeedForward_Network<Logistic, Squared_Error> * d_network, Raw_Matrix * d_input);

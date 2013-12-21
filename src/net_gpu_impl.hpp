@@ -17,8 +17,11 @@ template<typename activation, typename error>
 Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Network<activation, error> & source);
 
 template<typename activation, typename error>
-void network_to_cpu(Raw_FeedForward_Network<activation, error> * d_network,
+void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d_network,
     Raw_FeedForward_Network<activation, error> & h_network);
+
+template<typename activation, typename error>
+void free_gpu_network(Raw_FeedForward_Network<activation, error> * d_network);
 
 template<typename activation, typename error>
 void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size,

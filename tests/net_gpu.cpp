@@ -81,7 +81,7 @@ TEST(gpu_utils, raw_net_to_gpu_and_back) {
   }
 
   //re copy back from gpu
-  network_to_cpu(d_net, raw_net);
+  network_to_cpu_free(d_net, raw_net);
 
   ASSERT_EQ(raw_net.input_size, input_size);
   ASSERT_EQ(raw_net.output_size, output_size);
@@ -141,7 +141,7 @@ TEST(net_gpu, calculate_activation) {
   int output_size = 1;
   calculate_activation(num_trials, input_size, hidden_size, output_size, d_net, d_inputs);
 
-  network_to_cpu(d_net, raw_net);
+  network_to_cpu_free(d_net, raw_net);
   //input activations
   ASSERT_EQ(raw_net.activation_input.n_rows, 3);
   ASSERT_EQ(raw_net.activation_input.n_cols, 2);
@@ -213,7 +213,7 @@ TEST(net_gpu, back_prop) {
 
 
   backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
-  network_to_cpu(d_net, raw_net);
+  network_to_cpu_free(d_net, raw_net);
 
   //Weights calculated from CPU implementation
   ASSERT_NEAR(1.8007, raw_net.weights_hiddenToOutput.at(0,0), .1);
@@ -284,7 +284,7 @@ TEST(net_gpu, advanced_back_prop) {
 
 
   backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
-  network_to_cpu(d_net, raw_net);
+  network_to_cpu_free(d_net, raw_net);
 
   calculate_activation(cpu, inputs);
   backprop(cpu, targets);
