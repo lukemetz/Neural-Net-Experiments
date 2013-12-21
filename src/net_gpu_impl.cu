@@ -39,6 +39,10 @@ Raw_Matrix matrix_to_cpu(Raw_Matrix * d_mat) {
   return h_mat;
 }
 
+void free_gpu_matrix(Raw_Matrix * d_mat) {
+  gpuErr(cudaFree(d_mat));
+}
+
 void copy_matrix_with_gpu_ptr(Raw_Matrix & dst, Raw_Matrix & src) {
   gpuErr(cudaMalloc((void **) &(dst.data), matrix_size(src)));
   gpuErr(cudaMemcpy(dst.data, src.data, matrix_size(src), cudaMemcpyHostToDevice));

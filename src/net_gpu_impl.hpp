@@ -11,6 +11,7 @@ void raw_train_batch_gpu(Raw_FeedForward_Network<activation, error> & network,
 
 Raw_Matrix * matrix_to_gpu(Raw_Matrix & source);
 Raw_Matrix matrix_to_cpu(Raw_Matrix * d_matrix);
+void free_gpu_matrix(Raw_Matrix * d_matrix);
 
 template<typename activation, typename error>
 Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Network<activation, error> & source);
