@@ -11,7 +11,7 @@ int main(int argc, char * argv[]) {
   A.shed_row(0); //remove header labels
   const int n_rows = 400;
   const int output_cols = 10;
-  const int test_num = 2000;
+  const int test_num = 200;
   arma::Mat<float> labels(n_rows, output_cols, arma::fill::zeros);
   arma::Mat<float> test_labels(test_num, output_cols, arma::fill::zeros);
   int i=0;
