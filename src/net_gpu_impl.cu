@@ -321,11 +321,13 @@ void backprop(int num_trials, int input_size, int hidden_size, int output_size,
 
 }
 
-template Raw_FeedForward_Network<Logistic, Squared_Error> * network_to_gpu(Raw_FeedForward_Network<Logistic, Squared_Error> & source);
-template void network_to_cpu_free(Raw_FeedForward_Network<Logistic, Squared_Error> * d_network,
-    Raw_FeedForward_Network<Logistic, Squared_Error> & h_network);
+#define FORWARD_DECL(error, activation) \
+template Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Network<activation, error> & source); \
+template void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d_network, \
+    Raw_FeedForward_Network<activation, error> & h_network); \
+template void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size, Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_input); \
+template void backprop(int num_trials, int input_size, int hidden_size, int output_size, \
+    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate);
 
-template void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size, Raw_FeedForward_Network<Logistic, Squared_Error> * d_network, Raw_Matrix * d_input);
-
-template void backprop(int num_trials, int input_size, int hidden_size, int output_size,
-    Raw_FeedForward_Network<Logistic, Squared_Error> * d_network, Raw_Matrix * d_targets, float learning_rate);
+FORWARD_DECL(Squared_Error, Logistic)
+FORWARD_DECL(Squared_Error, Linear)

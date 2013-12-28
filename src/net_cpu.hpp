@@ -23,7 +23,6 @@ void train_batch(FeedForward_Network<activation, error>& network,
     network.resize_activation(batch_size);
 
     int batches_in_train = targets.n_rows/batch_size - 1;
-    //batches_in_train = 1000;
     for (int i = 0; i < batches_in_train; ++i) {
       arma::Mat<float> input_slice = inputs.rows(i*batch_size, (i+1) * batch_size-1);
       calculate_activation(network, input_slice);
@@ -59,8 +58,11 @@ void backprop(FeedForward_Network<activation, error> &network,
   network.output_deltas = output_deltas;
 
   float momentum = 0.8f;
-  arma::Mat<float> delta_weights_hiddenToOutput = (1 - momentum) * learning_rate * (output_deltas.t() * network.activation_hidden).t() +
-    momentum * (network.weights_hiddenToOutput - network.last_weights_hiddenToOutput);
+  auto & standard_piece = (1 - momentum) * learning_rate * (output_deltas.t() * network.activation_hidden).t();
+
+  auto & momentum_piece = momentum * (network.weights_hiddenToOutput - network.last_weights_hiddenToOutput);
+
+  arma::Mat<float> delta_weights_hiddenToOutput = standard_piece + momentum_piece;
   network.last_weights_hiddenToOutput = network.weights_hiddenToOutput;
   network.weights_hiddenToOutput += delta_weights_hiddenToOutput;
 

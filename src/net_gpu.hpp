@@ -17,7 +17,6 @@ inline void gpu_train_batch(FeedForward_Network<activation, error>& network,
   int output_size = network.output_size;
 
   int batches_in_train = targets.n_rows/batch_size - 1;
-  //batches_in_train = 1000;
   for (int i = 0; i < batches_in_train; ++i) {
     arma::Mat<float> input_slice = inputs.rows(i*batch_size, (i+1) * batch_size - 1);
 

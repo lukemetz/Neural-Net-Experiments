@@ -34,9 +34,14 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
   raw.hidden_size = 4;
   raw.weights_inputToHidden.data[3] = 3;
   raw.weights_hiddenToOutput.data[3] = 4;
+
+  raw.weights_inputToHidden.data[199] = 3;
+  raw.weights_hiddenToOutput.data[50] = 4;
+
   raw.activation_input.data[3] = 3;
   raw.activation_hidden.data[4] = 4;
   raw.activation_output.data[5] = 5;
+
 
   raw.output_deltas.data[3] = 5;
   raw.hidden_deltas.data[3] = 5;
@@ -49,6 +54,9 @@ TEST(raw_network, FeedForward_to_raw_and_back) {
 
   ASSERT_EQ(f.weights_inputToHidden[3], 3);
   ASSERT_EQ(f.weights_hiddenToOutput[3], 4);
+
+  ASSERT_EQ(f.weights_inputToHidden[199], 3);
+  ASSERT_EQ(f.weights_hiddenToOutput[50], 4);
 
   ASSERT_EQ(f.activation_input[3], 3);
   ASSERT_EQ(f.activation_hidden[4], 4);

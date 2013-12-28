@@ -212,7 +212,7 @@ TEST(net_gpu, back_prop) {
   Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
 
 
-  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
+  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets);
   network_to_cpu_free(d_net, raw_net);
 
   //Weights calculated from CPU implementation
@@ -239,15 +239,15 @@ TEST(net_gpu, advanced_back_prop) {
       //gpu.weights_inputToHidden.at(i,j) = .1 * i - .1 * j;
       //cpu.weights_inputToHidden.at(i,j) = .1 * i - .1 * j;
 
-      gpu.weights_inputToHidden.at(i,j) = 1 + i - 10*j;
-      cpu.weights_inputToHidden.at(i,j) = 1 + i - 10*j;
-      gpu.last_weights_inputToHidden.at(i,j) = 0;
-      cpu.last_weights_inputToHidden.at(i,j) = 0;
+      gpu.weights_inputToHidden.at(i,j) = 1 - 1*i - 1*j;
+      cpu.weights_inputToHidden.at(i,j) = 1 - 1*i - 1*j;
+      gpu.last_weights_inputToHidden.at(i,j) = -10;
+      cpu.last_weights_inputToHidden.at(i,j) = -10;
 
-      gpu.weights_hiddenToOutput.at(j, i) = -1 - i + 10*j;
-      cpu.weights_hiddenToOutput.at(j, i) = -1 -i + 10*j;
-      gpu.last_weights_hiddenToOutput.at(j, i) = 0;
-      cpu.last_weights_hiddenToOutput.at(j, i) = 0;
+      gpu.weights_hiddenToOutput.at(j, i) = -1 - 1*i*j + 1*j;
+      cpu.weights_hiddenToOutput.at(j, i) = -1 - 1*i*j + 1*j;
+      gpu.last_weights_hiddenToOutput.at(j, i) = i*(1-j)*1;
+      cpu.last_weights_hiddenToOutput.at(j, i) = i*(1-j)*1;
     }
   }
   Raw_FeedForward_Network<> raw_net = convert_to_raw(gpu);
@@ -283,8 +283,9 @@ TEST(net_gpu, advanced_back_prop) {
   Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
 
 
-  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets, .9);
+  backprop(num_trials, input_size, hidden_size, output_size, d_net, d_targets);
   network_to_cpu_free(d_net, raw_net);
+  update_from_raw(gpu, raw_net);
 
   calculate_activation(cpu, inputs);
   backprop(cpu, targets);
@@ -297,27 +298,14 @@ TEST(net_gpu, advanced_back_prop) {
       }
     }
   };
+
   check_equal(cpu.activation_input, from_raw(raw_net.activation_input));
-  //std::cout << "activation_input" << std::endl << cpu.activation_input << std::endl << gpu.activation_input << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.activation_output, from_raw(raw_net.activation_output));
-  //std::cout << "activation_output" << std::endl << cpu.activation_output << std::endl << gpu.activation_output << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.activation_hidden, from_raw(raw_net.activation_hidden));
-  //std::cout << "activation_hidden" << std::endl << cpu.activation_hidden << std::endl << gpu.activation_hidden << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.weights_hiddenToOutput, from_raw(raw_net.weights_hiddenToOutput));
-  //std::cout << "weights_hiddenToOutput" << std::endl << cpu.weights_hiddenToOutput << std::endl << gpu.weights_hiddenToOutput << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.weights_inputToHidden, from_raw(raw_net.weights_inputToHidden));
-  //std::cout << "weights_inputToHidden" << std::endl << cpu.weights_inputToHidden << std::endl << gpu.weights_inputToHidden << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.last_weights_inputToHidden, from_raw(raw_net.last_weights_inputToHidden));
-  //std::cout << "last_weights_inputToHidden" << std::endl << cpu.last_weights_inputToHidden << std::endl << gpu.last_weights_inputToHidden << std::endl;
-  //std::cout << "====" << std::endl;
   check_equal(cpu.last_weights_hiddenToOutput, from_raw(raw_net.last_weights_hiddenToOutput));
-  //std::cout << "last_weights_hiddenToOutput" << std::endl << cpu.last_weights_hiddenToOutput << std::endl << gpu.last_weights_hiddenToOutput << std::endl;
-  //std::cout << "====" << std::endl;
 }
 
 std::array<float, 2> gpu_xor_func(float x, float y) {
@@ -430,20 +418,20 @@ std::array<float, 2> gpu_complex_func(float x, float y) {
   return res;
 };
 
-TEST(net_gpu, reasonable_results_batch_train_xor_fail) {
+TEST(net_gpu, cpu_and_gpu_do_not_diverge_for_circle_function) {
   int input_size =  2;
   int output_size = 2;
-  FeedForward_Network<> gpu(input_size, 10, output_size);
+  FeedForward_Network<Linear, Squared_Error> gpu(input_size, 10, output_size);
+  FeedForward_Network<Linear, Squared_Error> cpu(input_size, 10, output_size);
   randomize(gpu);
 
-  FeedForward_Network<> cpu(input_size, 10, output_size);
   cpu.weights_inputToHidden = gpu.weights_inputToHidden;
   cpu.weights_hiddenToOutput = gpu.weights_hiddenToOutput;
   cpu.last_weights_inputToHidden = gpu.last_weights_inputToHidden;
   cpu.last_weights_hiddenToOutput= gpu.last_weights_hiddenToOutput;
 
   const int num_rows = 100;
-  arma::Mat<float> features(num_rows*100, input_size + output_size);
+  arma::Mat<float> features(num_rows, input_size + output_size);
 
   for (int z=0; z < num_rows; z++) {
     int i = z % 10;
@@ -456,26 +444,17 @@ TEST(net_gpu, reasonable_results_batch_train_xor_fail) {
     features(z, input_size+1) = gpu_complex_func(i,j)[1];
   }
 
+  float learning_rate = 0.4f;
+  int batch_size = 20;
 
-  for (int i=0; i < 30; i++) {
-    float learning_rate = 0.4f;
-    int batch_size = 20;
+  for (int i=0; i < 100; i++) {
     gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
     train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
-    //train_batch(cpu, features, target.cols(5,6), learning_rate, batch_size);
-    arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
-    std::cout << "gpu:" << squared_diff(gpu_predict_data, features.cols(input_size,input_size+output_size-1)) << ", ";
-
-    arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));
-    std::cout << "cpu: " << squared_diff(cpu_predict_data, features.cols(input_size,input_size+output_size-1)) << std::endl;
-    features = shuffle(features);
   }
   arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
   arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));
   float squared_diff_gpu = squared_diff(gpu_predict_data, features.cols(input_size,input_size+output_size-1));
   float squared_diff_cpu = squared_diff(cpu_predict_data, features.cols(input_size,input_size+output_size-1));
 
-
-  ASSERT_NEAR(squared_diff_gpu, squared_diff_cpu, 4.0f);
-
+  ASSERT_NEAR(squared_diff_gpu, squared_diff_cpu, 1.0f);
 }
