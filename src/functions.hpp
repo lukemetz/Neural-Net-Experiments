@@ -4,13 +4,15 @@
 #include <algorithm>
 #endif
 
+#ifdef __NVCC__
+#define GPU __device__
+#else
+#define GPU
+#endif
 
 struct Squared_Error {
   template<typename U>
-  #ifdef __NVCC__
-  __device__
-  #endif
-  static inline U error(U target, U result) {
+  GPU static inline U error(U target, U result) {
     return 1/2.0f * (target - result) * (target - result);
   }
   template<typename U, typename J>
@@ -25,15 +27,13 @@ struct Squared_Error {
   #endif
 };
 
+//Activation
 #ifndef __NVCC__
 using arma::exp;
 #endif
 struct Logistic {
   template<typename U>
-  #ifdef __NVCC__
-  __device__
-  #endif
-  static inline U activation(U k) {
+  GPU static inline U activation(U k) {
     return 1 / (1 + exp(-k));
   }
 
@@ -48,3 +48,26 @@ struct Logistic {
   }
   #endif
 };
+
+struct Linear {
+  template<typename U>
+  GPU static inline U activation(U k) {
+    return k;
+  }
+
+  #ifdef __NVCC__
+  template<typename U>
+  GPU static inline U activation_dir(U k) {
+    return 1;
+  }
+  #else
+  template<typename U>
+  static inline U activation_dir(U k) {
+    return k.ones();
+  }
+  #endif
+
+};
+
+#undef GPU
+
