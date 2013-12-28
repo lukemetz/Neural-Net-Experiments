@@ -304,7 +304,7 @@ void backprop(int num_trials, int input_size, int hidden_size, int output_size,
   gpuErr(cudaPeekAtLastError());
   gpuErr( cudaDeviceSynchronize() );
 
-  kernel_calculate_hidden_deltas<<<1 + num_trials * output_size / block_size, block_size>>> (d_network);
+  kernel_calculate_hidden_deltas<<<1 + num_trials * hidden_size/ block_size, block_size>>> (d_network);
   gpuErr(cudaPeekAtLastError());
   gpuErr( cudaDeviceSynchronize() );
 
