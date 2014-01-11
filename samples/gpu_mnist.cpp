@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) {
   std::cout << "train" << std::endl;
   for (int i=0; i <80; i++) {
     std::cout << i << std::endl;
-    gpu_train_batch(f, data.cols(output_cols, data.n_cols - 1).rows(0, n_rows-1), data.cols(0, output_cols-1), 0.03f, 10);
+    gpu_train_batch(f, data.cols(output_cols, data.n_cols - 1).rows(0, n_rows-1), data.cols(0, output_cols-1), 10, 0.03f);
     std::cout << "start score" << std::endl;
     arma::Mat<float> result = gpu_predict(f, data.cols(output_cols, data.n_cols-1).rows(0, n_rows-1));
     std::cout << "Score: " << classify_percent_score(result, data.cols(0, output_cols-1)) << std::endl;

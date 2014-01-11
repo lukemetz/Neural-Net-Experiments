@@ -7,7 +7,7 @@ Raw_Matrix raw_predict_gpu(Raw_FeedForward_Network<activation, error> & network,
 
 template<typename activation, typename error>
 void raw_train_batch_gpu(Raw_FeedForward_Network<activation, error> & network,
-    Raw_Matrix & inputs, Raw_Matrix & targets, float learning_rate, int batch_size);
+    Raw_Matrix & inputs, Raw_Matrix & targets, int batch_size, float learning_rate, float momentum);
 
 Raw_Matrix * matrix_to_gpu(Raw_Matrix & source);
 Raw_Matrix matrix_to_cpu(Raw_Matrix * d_matrix);
@@ -29,4 +29,4 @@ void calculate_activation(int num_trials, std::vector<int> sizes,
 
 template<typename activation, typename error>
 void backprop(int num_trials, std::vector<int> sizes,
-    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate = 0.8f);
+    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate = 0.8f, float momentum = 0.8f);

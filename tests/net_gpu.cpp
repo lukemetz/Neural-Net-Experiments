@@ -356,8 +356,8 @@ TEST(net_gpu, reasonable_results_batch_train_xor) {
 
   float learning_rate = 0.8f;
   int batch_size = 1;
-  gpu_train_batch(gpu, features, target, learning_rate, batch_size);
-  train_batch(cpu, features, target, learning_rate, batch_size);
+  gpu_train_batch(gpu, features, target, batch_size, learning_rate);
+  train_batch(cpu, features, target, batch_size, learning_rate);
   gpu_check_xor(gpu);
   gpu_check_xor(cpu);
 }
@@ -392,8 +392,8 @@ TEST(net_gpu, reasonable_results_batch_train_xor_multipass) {
   for (int i=0; i < 100; i++) {
     float learning_rate = 0.8f;
     int batch_size = 1;
-    gpu_train_batch(gpu, features, target, learning_rate, batch_size);
-    train_batch(cpu, features, target, learning_rate, batch_size);
+    gpu_train_batch(gpu, features, target, batch_size, learning_rate);
+    train_batch(cpu, features, target, batch_size, learning_rate);
   }
   gpu_check_xor(gpu);
   gpu_check_xor(cpu);
@@ -442,8 +442,8 @@ TEST(net_gpu, cpu_and_gpu_do_not_diverge_for_circle_function) {
   int batch_size = 20;
 
   for (int i=0; i < 100; i++) {
-    gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
-    train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
+    gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), batch_size, learning_rate);
+    train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), batch_size, learning_rate);
   }
   arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
   arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));
@@ -485,8 +485,8 @@ TEST(net_gpu, cpu_and_gpu_train_on_circle_many_layey) {
   int batch_size = 20;
 
   for (int i=0; i < 400; i++) {
-    gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
-    train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), learning_rate, batch_size);
+    gpu_train_batch(gpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), batch_size, learning_rate);
+    train_batch(cpu, features.cols(0, input_size-1), features.cols(input_size, input_size+output_size-1), batch_size, learning_rate);
   }
   arma::Mat<float> gpu_predict_data = gpu_predict(gpu, features.cols(0, input_size-1));
   arma::Mat<float> cpu_predict_data = predict(cpu, features.cols(0, input_size-1));

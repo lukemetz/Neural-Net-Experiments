@@ -19,7 +19,7 @@ void train_online(FeedForward_Network<activation, error>& network,
 
 template <typename activation, typename error>
 void train_batch(FeedForward_Network<activation, error>& network,
-    arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate, int batch_size) {
+    arma::Mat<float> inputs, arma::Mat<float> targets, int batch_size, float learning_rate) {
     network.resize_activation(batch_size);
 
     int batches_in_train = targets.n_rows/batch_size - 1;
@@ -48,7 +48,7 @@ void randomize(FeedForward_Network<activation, error>& network, float standard_d
 
 template <typename arma_t, typename activation, typename error>
 void backprop(FeedForward_Network<activation, error> &network,
-    arma_t target, float learning_rate = 0.8f) {
+    arma_t target, float learning_rate = 0.8f, float momentum = 0.8f) {
   //Calculate deltas
 
   //output delta first
@@ -58,8 +58,6 @@ void backprop(FeedForward_Network<activation, error> &network,
   for (int i = network.deltas.size() - 2; i >= 0; --i) {
     network.deltas[i] = (network.deltas[i+1] * network.weights[i+1].t()) % activation::activation_dir(network.activations[i+1]);
   }
-
-  float momentum = 0.8f;
 
   //update weights
   for (int i=0; i < network.weights.size(); ++i) {

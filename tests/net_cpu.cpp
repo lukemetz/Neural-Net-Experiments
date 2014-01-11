@@ -81,9 +81,9 @@ TEST(FeedForward_Network, reasonable_results_batch_train_xor) {
 
   float learning_rate = 0.4f;
   int batch_size = 1;
-  train_batch(f, features, target, learning_rate, batch_size);
-  train_batch(f, features, target, learning_rate, batch_size);
-  train_batch(f, features, target, learning_rate, batch_size);
+  train_batch(f, features, target, batch_size, learning_rate);
+  train_batch(f, features, target, batch_size, learning_rate);
+  train_batch(f, features, target, batch_size, learning_rate);
   check_xor(f);
 }
 
@@ -115,7 +115,7 @@ TEST(FeedForward_Network, reasonable_results_batch_train_xor_4_layer) {
   float learning_rate = 0.3f;
   int batch_size = 1;
   for (int i=0; i < 100; ++i) {
-    train_batch(f, features, target, learning_rate, batch_size);
+    train_batch(f, features, target, batch_size, learning_rate);
     //auto predict_dat= predict(f, features);
     //std::cout << "Squared error:" << squared_diff(target, predict_dat) << std::endl;
   }

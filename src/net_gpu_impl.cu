@@ -203,7 +203,7 @@ __global__ void kernel_calculate_layer_deltas(Raw_FeedForward_Network<activation
 }
 
 template<typename activation, typename error>
-__global__ void kernel_update_weights_last(Raw_FeedForward_Network<activation, error> * d_network, float learning_rate, int on_layer) {
+__global__ void kernel_update_weights_last(Raw_FeedForward_Network<activation, error> * d_network, float learning_rate, float momentum, int on_layer) {
   int index = blockIdx.x * block_size + threadIdx.x;
   int num_prior = d_network->activations[on_layer].n_cols;
   int num_post = d_network->activations[on_layer+1].n_cols;
@@ -225,7 +225,6 @@ __global__ void kernel_update_weights_last(Raw_FeedForward_Network<activation, e
     accumulate += delta.at(i, on_post) * activation_vals.at(i, on_prior);
   }
 
-  float momentum = 0.8f;
   float standard_piece = (1 - momentum) * accumulate * learning_rate;
   float momentum_piece = momentum * (weights.at(on_prior, on_post) - last_weights.at(on_prior, on_post));
   float delta_weight = standard_piece + momentum_piece;
@@ -236,7 +235,8 @@ __global__ void kernel_update_weights_last(Raw_FeedForward_Network<activation, e
 
 
 template<typename activation, typename error>
-__global__ void kernel_update_weights_layer(Raw_FeedForward_Network<activation, error> * d_network, float learning_rate, int on_layer) {
+__global__ void kernel_update_weights_layer(Raw_FeedForward_Network<activation, error> * d_network,
+    float learning_rate, float momentum, int on_layer) {
   int index = blockIdx.x * block_size + threadIdx.x;
   int num_trials = d_network->activations[on_layer].n_rows;
 
@@ -260,7 +260,6 @@ __global__ void kernel_update_weights_layer(Raw_FeedForward_Network<activation, 
 
   }
 
-  float momentum = 0.8f;
   float standard_piece = (1 - momentum) * accumulate * learning_rate;
   float momentum_piece = momentum * (weights.at(on_prior, on_post) - last_weights.at(on_prior, on_post));
   float delta_weight = standard_piece + momentum_piece;
@@ -271,7 +270,7 @@ __global__ void kernel_update_weights_layer(Raw_FeedForward_Network<activation, 
 
 template<typename activation, typename error>
 void backprop(int num_trials, std::vector<int> sizes,
-    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate)
+    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate, float momentum)
 {
   kernel_calculate_output_deltas<<<1 + num_trials * sizes.back() / block_size, block_size>>> (d_network, d_targets, sizes.size()-2);
   gpuErr(cudaPeekAtLastError());
@@ -285,13 +284,13 @@ void backprop(int num_trials, std::vector<int> sizes,
 
 
   kernel_update_weights_last
-    <<<1 + sizes.back() * sizes[sizes.size() - 2] / block_size, block_size>>>(d_network, learning_rate, sizes.size()-2);
+    <<<1 + sizes.back() * sizes[sizes.size() - 2] / block_size, block_size>>>(d_network, learning_rate, momentum, sizes.size()-2);
   gpuErr(cudaPeekAtLastError());
   gpuErr( cudaDeviceSynchronize() );
 
   for (int i=sizes.size()-3; i >= 0; --i) {
     kernel_update_weights_layer
-      <<<1 + sizes[i + 1] * sizes[i]/ block_size, block_size>>>(d_network, learning_rate, i);
+      <<<1 + sizes[i + 1] * sizes[i]/ block_size, block_size>>>(d_network, learning_rate, momentum, i);
     gpuErr(cudaPeekAtLastError());
     gpuErr( cudaDeviceSynchronize() );
   }
@@ -304,7 +303,7 @@ template void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d
     Raw_FeedForward_Network<activation, error> & h_network); \
 template void calculate_activation(int num_trials, std::vector<int> layer_sizes, Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_input); \
 template void backprop(int num_trials, std::vector<int> layer_sizes, \
-    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate);
+    Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate, float momentum);
 
 SPECIALIZE(Squared_Error, Logistic)
 SPECIALIZE(Squared_Error, Linear)

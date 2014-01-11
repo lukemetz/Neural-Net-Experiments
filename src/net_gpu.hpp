@@ -8,7 +8,7 @@
 
 template <typename activation, typename error>
 inline void gpu_train_batch(FeedForward_Network<activation, error>& network,
-    arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate, int batch_size) {
+    arma::Mat<float> inputs, arma::Mat<float> targets, int batch_size, float learning_rate = 0.8f, float momentum = 0.8f) {
 
   network.resize_activation(batch_size);
   Raw_FeedForward_Network<activation, error> raw_net = convert_to_raw(network);
@@ -31,7 +31,7 @@ inline void gpu_train_batch(FeedForward_Network<activation, error>& network,
     Raw_Matrix raw_targets = to_raw(targets_slice);
     Raw_Matrix * d_targets = matrix_to_gpu(raw_targets);
 
-    backprop(num_trials, network.layer_sizes, d_network, d_targets, learning_rate);
+    backprop(num_trials, network.layer_sizes, d_network, d_targets, learning_rate, momentum);
     free_gpu_matrix(d_targets);
   }
 
