@@ -5,38 +5,32 @@ project (net)
 
 find_package(CUDA REQUIRED)
 set(CUDA_BIN_PATH /opt/cuda/bin/)
-# nvcc flags                                                                                                                                                                                               
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-ccbin /usr/bin -arch=sm_20)
-#set(CUDA_HOST_COMPILER /usr/bin/clang++)
-#set(CMAKE_C_COMPILER /usr/bin/clang)
-#set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-#set(CUDA_HOST_COMPILER /opt/cuda/bin/nvcc)
-#cuda_add_library(cuda_lib net.cu)
+#-fPIC needed for shared library
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-ccbin /usr/bin -arch=sm_20 -Xcompiler -fPIC)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
 add_definitions("-g")
 add_definitions("-Wall")
 add_definitions("-std=c++11")
-add_definitions("-O1")
+add_definitions("-O3")
 
 cuda_compile(CUDA_O src/net_gpu_impl.cu)
+cuda_add_library(net SHARED ${CUDA_O})
 cuda_add_executable(tests
   tests/net_cpu.cpp
   tests/main.cpp
   tests/net.cpp
-  ${CUDA_O}
   tests/net_gpu.cpp
   tests/net_raw_utils.cpp
   )
 
-target_link_libraries(tests armadillo )
-target_link_libraries(tests gtest)
+target_link_libraries(tests armadillo net gtest )
 
 include_directories(src)
-cuda_add_executable(gpu_mnist samples/gpu_mnist.cpp ${CUDA_O})
+cuda_add_executable(gpu_mnist samples/gpu_mnist.cpp)
 add_executable(cpu_mnist samples/cpu_mnist.cpp)
-target_link_libraries(cpu_mnist armadillo)
-target_link_libraries(gpu_mnist armadillo)
+target_link_libraries(cpu_mnist armadillo net)
+target_link_libraries(gpu_mnist armadillo net)
 
 add_executable(convert_to_arma tools/convert_to_arma.cpp)
 target_link_libraries(convert_to_arma armadillo)
