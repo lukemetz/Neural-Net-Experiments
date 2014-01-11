@@ -40,7 +40,7 @@ int main(int argc, char * argv[]) {
   std::cout << A.n_rows << "," << labels.n_rows << std::endl;
   arma::Mat<float> data = join_rows(labels, A);
   const int feature_size = 784;
-  FeedForward_Network<> f(feature_size, 1000, 10);
+  FeedForward_Network<> f({feature_size, 1000, 10});
   randomize(f);
   std::cout << "train" << std::endl;
   for (int i=0; i <80; i++) {

@@ -24,9 +24,9 @@ template<typename activation, typename error>
 void free_gpu_network(Raw_FeedForward_Network<activation, error> * d_network);
 
 template<typename activation, typename error>
-void calculate_activation(int num_trials, int input_size, int hidden_size, int output_size,
+void calculate_activation(int num_trials, std::vector<int> sizes,
     Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_input);
 
 template<typename activation, typename error>
-void backprop(int num_trials, int input_size, int hidden_size, int output_size,
+void backprop(int num_trials, std::vector<int> sizes,
     Raw_FeedForward_Network<activation, error> * d_network, Raw_Matrix * d_targets, float learning_rate = 0.8f);

@@ -14,23 +14,31 @@ inline Raw_Matrix to_raw(arma::Mat<float> & mat) {
 
 template <typename activation, typename error>
 inline Raw_FeedForward_Network<activation, error> convert_to_raw(FeedForward_Network<activation, error> & network) {
+
   Raw_FeedForward_Network<activation, error> raw;
-  raw.input_size = network.input_size;
-  raw.hidden_size = network.hidden_size;
-  raw.output_size = network.output_size;
 
-  raw.weights_inputToHidden = to_raw(network.weights_inputToHidden);
-  raw.weights_hiddenToOutput = to_raw(network.weights_hiddenToOutput);
+  raw.num_layers = network.layer_sizes.size();
+  raw.layer_sizes = new int [raw.num_layers];
+  for (int i=0; i < raw.num_layers; ++i) {
+    raw.layer_sizes[i] = network.layer_sizes[i];
+  }
 
-  raw.last_weights_inputToHidden = to_raw(network.last_weights_inputToHidden);
-  raw.last_weights_hiddenToOutput = to_raw(network.last_weights_hiddenToOutput);
+  raw.weights = new Raw_Matrix [network.weights.size()];
+  raw.last_weights = new Raw_Matrix [network.last_weights.size()];
+  for (int i=0; i < network.weights.size(); ++i) {
+    raw.weights[i] = to_raw(network.weights[i]);
+    raw.last_weights[i] = to_raw(network.last_weights[i]);
+  }
 
-  raw.activation_input = to_raw(network.activation_input);
-  raw.activation_hidden = to_raw(network.activation_hidden);
-  raw.activation_output = to_raw(network.activation_output);
+  raw.activations = new Raw_Matrix [network.activations.size()];
+  for (int i=0; i < network.activations.size(); ++i) {
+    raw.activations[i] = to_raw(network.activations[i]);
+  }
 
-  raw.output_deltas = to_raw(network.output_deltas);
-  raw.hidden_deltas = to_raw(network.hidden_deltas);
+  raw.deltas = new Raw_Matrix [network.deltas.size()];
+  for (int i=0; i < network.deltas.size(); ++i) {
+    raw.deltas[i] = to_raw(network.deltas[i]);
+  }
   return raw;
 }
 
@@ -40,21 +48,21 @@ inline arma::Mat<float> from_raw(const Raw_Matrix & raw) {
 
 template <typename activation, typename error>
 inline void update_from_raw(FeedForward_Network<activation, error> & network, const Raw_FeedForward_Network<activation, error> &raw) {
-  network.input_size = raw.input_size;
-  network.hidden_size = raw.hidden_size;
-  network.output_size = raw.output_size;
+  for (int i=0; i < raw.num_layers; ++i) {
+    network.layer_sizes[i] = raw.layer_sizes[i];
+  }
 
-  network.weights_inputToHidden = from_raw(raw.weights_inputToHidden);
-  network.weights_hiddenToOutput = from_raw(raw.weights_hiddenToOutput);
+  for(int i=0; i < network.weights.size(); ++i) {
+    network.weights[i] = from_raw(raw.weights[i]);
+    network.last_weights[i] = from_raw(raw.last_weights[i]);
+  }
 
-  network.last_weights_inputToHidden = from_raw(raw.last_weights_inputToHidden);
-  network.last_weights_hiddenToOutput = from_raw(raw.last_weights_hiddenToOutput);
+  for(int i=0; i < network.activations.size(); ++i) {
+    network.activations[i] = from_raw(raw.activations[i]);
+  }
 
-  network.activation_input = from_raw(raw.activation_input);
-  network.activation_hidden = from_raw(raw.activation_hidden);
-  network.activation_output = from_raw(raw.activation_output);
-
-  network.output_deltas = from_raw(raw.output_deltas);
-  network.hidden_deltas = from_raw(raw.hidden_deltas);
-
+  for(int i=0; i < network.deltas.size(); ++i) {
+    network.deltas[i] = from_raw(raw.deltas[i]);
+  }
 }
+

@@ -32,10 +32,11 @@ void check_xor(model_t f) {
 }
 
 TEST(FeedForward_Network, reasonable_results_for_online_train_xor) {
-  FeedForward_Network<> f(2, 10, 2);
+  FeedForward_Network<> f({2, 10, 2});
+  f.resize_activation(1);
   randomize(f);
 
-  const int num_rows = 10000;
+  const int num_rows = 40000;
   arma::Mat<float> features(num_rows, 2);
   arma::Mat<float> target(num_rows, 2);
 
@@ -51,13 +52,15 @@ TEST(FeedForward_Network, reasonable_results_for_online_train_xor) {
     }
   }
 
-  float learning_rate = 0.8f;
-  train_online(f, features, target, learning_rate);
+  float learning_rate = 0.05f;
+  for (int i=0; i < 40; i++) {
+    train_online(f, features, target, learning_rate);
+  }
   check_xor(f);
 }
 
 TEST(FeedForward_Network, reasonable_results_batch_train_xor) {
-  FeedForward_Network<> f(2, 10, 2);
+  FeedForward_Network<> f({2, 10, 2});
   randomize(f);
 
   const int num_rows = 10000;
@@ -76,19 +79,58 @@ TEST(FeedForward_Network, reasonable_results_batch_train_xor) {
     }
   }
 
-  float learning_rate = 0.8f;
+  float learning_rate = 0.4f;
   int batch_size = 1;
+  train_batch(f, features, target, learning_rate, batch_size);
+  train_batch(f, features, target, learning_rate, batch_size);
   train_batch(f, features, target, learning_rate, batch_size);
   check_xor(f);
 }
 
+TEST(FeedForward_Network, reasonable_results_batch_train_xor_4_layer) {
+  FeedForward_Network<> f({2, 8, 8, 2});
+  randomize(f);
+
+  const int num_rows = 5000;
+  arma::Mat<float> features(num_rows, 2);
+  arma::Mat<float> target(num_rows, 2);
+
+  for (int z=0; z < num_rows/4; z++) {
+    for (int i=0; i<2; i++) {
+      for (int j=0; j<2; j++) {
+        int on_index = z*4+i*2+j;
+        features(on_index, 0) = i;
+        features(on_index, 1) = j;
+      }
+    }
+  }
+
+  shuffle(features);
+  for (int i=0; i<features.n_rows; ++i) {
+    target(i, 0) = xor_func(features(i, 0), features(i, 1))[0];
+    target(i, 1) = xor_func(features(i, 0), features(i, 1))[1];
+  }
+
+
+  float learning_rate = 0.3f;
+  int batch_size = 1;
+  for (int i=0; i < 100; ++i) {
+    train_batch(f, features, target, learning_rate, batch_size);
+    //auto predict_dat= predict(f, features);
+    //std::cout << "Squared error:" << squared_diff(target, predict_dat) << std::endl;
+  }
+
+  check_xor(f);
+}
+
 TEST(FeedForward_Network, activations_are_correct_shape) {
-  FeedForward_Network<> f(2, 10, 2);
+  FeedForward_Network<> f({2, 10, 2});
   const int num_rows = 11;
+  f.resize_activation(num_rows);
   arma::Mat<float> features(num_rows, 2, arma::fill::zeros);
   calculate_activation(f, features);
 
-  ASSERT_EQ(f.activation_input.n_rows, 11);
-  ASSERT_EQ(f.activation_hidden.n_rows, 11);
-  ASSERT_EQ(f.activation_output.n_rows, 11);
+  ASSERT_EQ(f.activations[0].n_rows, 11);
+  ASSERT_EQ(f.activations[1].n_rows, 11);
+  ASSERT_EQ(f.activations[2].n_rows, 11);
 }

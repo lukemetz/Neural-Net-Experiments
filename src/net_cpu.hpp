@@ -32,63 +32,62 @@ void train_batch(FeedForward_Network<activation, error>& network,
 }
 
 template <typename activation, typename error>
-void randomize(FeedForward_Network<activation, error>& network) {
+void randomize(FeedForward_Network<activation, error>& network, float standard_deviation = 0.05) {
   std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0, .01);
+  std::normal_distribution<float> distribution(0, standard_deviation);
 
   auto random_num = [&]() {return distribution(generator);};
-  network.weights_inputToHidden.imbue(random_num);
-  network.weights_hiddenToOutput.imbue(random_num);
-  //TODO does this make sense?
-  network.last_weights_inputToHidden.imbue(random_num);
-  network.last_weights_hiddenToOutput.imbue(random_num);
+  for (int i=0; i < network.weights.size(); ++i) {
+    network.weights[i].imbue(random_num);
+    //TODO figure out which one is right
+    //avoid local nearby local maximum
+    network.last_weights[i].imbue(random_num);
+    //network.last_weights[i] = network.weights[i];
+  }
 }
 
 template <typename arma_t, typename activation, typename error>
 void backprop(FeedForward_Network<activation, error> &network,
     arma_t target, float learning_rate = 0.8f) {
   //Calculate deltas
-  arma::Mat<float> output_deltas(network.activation_output.n_rows, network.output_size);
-  output_deltas = error::error_dir(target, network.activation_output) % activation::activation_dir(network.activation_output);
 
-  arma::Mat<float> hidden_deltas (network.activation_output.n_cols, network.hidden_size);
-  hidden_deltas = (output_deltas * network.weights_hiddenToOutput.t()) % activation::activation_dir(network.activation_hidden);
+  //output delta first
+  network.deltas.back() = error::error_dir(target, network.activations.back()) % activation::activation_dir(network.activations.back());
 
-  network.hidden_deltas = hidden_deltas;
-  network.output_deltas = output_deltas;
+  //rest of the delta
+  for (int i = network.deltas.size() - 2; i >= 0; --i) {
+    network.deltas[i] = (network.deltas[i+1] * network.weights[i+1].t()) % activation::activation_dir(network.activations[i+1]);
+  }
 
   float momentum = 0.8f;
-  auto & standard_piece = (1 - momentum) * learning_rate * (output_deltas.t() * network.activation_hidden).t();
 
-  auto & momentum_piece = momentum * (network.weights_hiddenToOutput - network.last_weights_hiddenToOutput);
-
-  arma::Mat<float> delta_weights_hiddenToOutput = standard_piece + momentum_piece;
-  network.last_weights_hiddenToOutput = network.weights_hiddenToOutput;
-  network.weights_hiddenToOutput += delta_weights_hiddenToOutput;
-
-  arma::Mat<float> delta_weights_inputToHidden = (1 - momentum) * learning_rate * (hidden_deltas.t() * network.activation_input).t() +
-    momentum * (network.weights_inputToHidden - network.last_weights_inputToHidden);
-  network.last_weights_inputToHidden = network.weights_inputToHidden;
-  network.weights_inputToHidden += delta_weights_inputToHidden;
+  //update weights
+  for (int i=0; i < network.weights.size(); ++i) {
+    auto & standard_piece = (1 - momentum) * learning_rate * (network.deltas[i].t() * network.activations[i]).t();
+    auto & momentum_piece = momentum * (network.weights[i] - network.last_weights[i]);
+    arma::Mat<float> delta_weights = standard_piece + momentum_piece;
+    network.last_weights[i] = network.weights[i];
+    network.weights[i] += delta_weights;
+  }
 }
 
 template <typename arma_t, typename activation, typename error>
 void calculate_activation(FeedForward_Network<activation, error>& network,
     arma_t input) {
-  network.activation_input = input;
 
-  network.activation_hidden = network.activation_input * network.weights_inputToHidden;
-  network.activation_hidden = activation::activation(network.activation_hidden);
-
-  network.activation_output = network.activation_hidden * network.weights_hiddenToOutput;
-  network.activation_output = activation::activation(network.activation_output);
+  network.activations[0] = input;
+  for(int i=1; i < network.activations.size(); ++i) {
+    network.activations[i] = network.activations[i-1] * network.weights[i-1];
+    network.activations[i] = activation::activation(network.activations[i]);
+  }
 }
 
+//TODO remove this function??
 template <typename activation, typename error>
 arma::Mat<float> predict(FeedForward_Network<activation, error>& network,
     arma::Mat<float> input) {
   calculate_activation(network, input);
-  return network.activation_output;
+  return network.activations.back();
 }
 
 inline double classify_percent_score(arma::Mat<float> result, arma::Mat<float> correct) {

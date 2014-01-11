@@ -26,14 +26,15 @@ cuda_add_executable(tests
   tests/net.cpp
   ${CUDA_O}
   tests/net_gpu.cpp
-  tests/net_raw_utils.cpp)
+  tests/net_raw_utils.cpp
+  )
 
 target_link_libraries(tests armadillo )
 target_link_libraries(tests gtest)
 
+include_directories(src)
 cuda_add_executable(gpu_mnist samples/gpu_mnist.cpp ${CUDA_O})
 add_executable(cpu_mnist samples/cpu_mnist.cpp)
-include_directories(src)
 target_link_libraries(cpu_mnist armadillo)
 target_link_libraries(gpu_mnist armadillo)
 
