@@ -30,10 +30,13 @@ struct FeedForward_Network {
     }
   }
 
+  //configuration of layers
   std::vector<int> layer_sizes;
 
   std::vector<arma::Mat<float>> weights;
+  //used in backprop with momentum
   std::vector<arma::Mat<float>> last_weights;
   std::vector<arma::Mat<float>> activations;
+  //used in backprop
   std::vector<arma::Mat<float>> deltas;
 };

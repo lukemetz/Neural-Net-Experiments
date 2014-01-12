@@ -113,8 +113,10 @@ void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d_network,
         sizeof(int) * h_network.num_layers, cudaMemcpyDeviceToHost));
   gpuErr(cudaFree(d_network));
 }
-//const int block_size = 128;
-const int block_size = 64;
+const int block_size = 128;
+//const int block_size = 256;
+//const int block_size = 512;
+//const int block_size = 64;
 
 template<typename activation, typename error>
 __global__ void kernel_calculate_layer_activations(Raw_FeedForward_Network<activation, error> * d_network, int on_layer) {
@@ -296,7 +298,7 @@ void backprop(int num_trials, std::vector<int> sizes,
   }
 }
 
-//Needed due to template implenentations in non header file
+//Needed due to template implementations not in header file
 #define SPECIALIZE(error, activation) \
 template Raw_FeedForward_Network<activation, error> * network_to_gpu(Raw_FeedForward_Network<activation, error> & source); \
 template void network_to_cpu_free(Raw_FeedForward_Network<activation, error> * d_network, \

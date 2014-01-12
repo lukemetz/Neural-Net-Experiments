@@ -7,7 +7,6 @@
 
 #include "net.hpp"
 
-
 template <typename activation = Logistic, typename error = Squared_Error>
 void train_online(FeedForward_Network<activation, error>& network,
     arma::Mat<float> inputs, arma::Mat<float> targets, float learning_rate) {
@@ -31,6 +30,7 @@ void train_batch(FeedForward_Network<activation, error>& network,
     }
 }
 
+//Randomize weights in a network.
 template <typename activation, typename error>
 void randomize(FeedForward_Network<activation, error>& network, float standard_deviation = 0.05) {
   std::default_random_engine generator;
@@ -88,6 +88,7 @@ arma::Mat<float> predict(FeedForward_Network<activation, error>& network,
   return network.activations.back();
 }
 
+//Scoring function for classification.
 inline double classify_percent_score(arma::Mat<float> result, arma::Mat<float> correct) {
   assert(result.n_cols == correct.n_cols);
   int num_correct = 0;
@@ -100,8 +101,9 @@ inline double classify_percent_score(arma::Mat<float> result, arma::Mat<float> c
   return static_cast<float>(num_correct) / static_cast<float>(result.n_rows);
 }
 
+//Scoring function that calculates the difference in squares between two matrices.
 inline float squared_diff(arma::Mat<float> result, arma::Mat<float> correct) {
   assert(result.n_cols == correct.n_cols);
   auto error_diff = correct - result;
-  return arma::accu(error_diff % error_diff);// / correct.n_rows;
+  return arma::accu(error_diff % error_diff);
 }
