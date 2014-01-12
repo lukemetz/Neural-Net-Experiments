@@ -23,13 +23,14 @@ To solve both of these issues, I turned to Cuda and C++.
 Required software:
 CMake, Cuda, Armadillo, google-test(gtest), Clang++ (with support for C++11)
 (tested on Arch Linux, paths will need to be changed depending on OS)
-`
-cd ... (this directory)
-cmake .
-make -j4
-./bin/tests
-`
+
+    cd ... (this directory)
+    cmake .
+    make -j4
+    ./bin/tests
+
 If everything passes, you should be good to go!
+To run the samples, download mnist training data from http://kaggle.com/c/digit-recognizer/data. Then run convert_to_arma on it and rename to mnist.arma. Run gpu_mnist or cpu_mnist in the directory containing mnist.arma.
 
 ####WARNING:
 This library and samples use an incredibly large amount of computation.
@@ -37,28 +38,29 @@ Save all work, as may cause system to crash due to temperature (such as on my la
 
 ##Sample Usage:
 For more examples see samples/.
-`
-//Create a network with 4 layers using the Logistic activation function and Squared_Error error function.
-FeedForward_Network<Logistic, Squared_Error> network({10, 20, 30, 2});
-//Randomize the initial weights in the network
-randomize(network);
 
-//train on CPU
-train_batch(network, features, targets, batch_size, learning_rate, momentum);
-//train on GPU
-GPU_train_batch(network, features, targets, batch_size, learning_rate, momentum);
 
-//train on CPU
-arma::Mat<float> outputs = predict(network, features);
-//train on GPU
-arma::Mat<float> outputs_GPU = GPU_predict(network, features);
-`
+    //Create a network with 4 layers using the Logistic activation function and Squared_Error error function.
+    FeedForward_Network<Logistic, Squared_Error> network({10, 20, 30, 2});
+    //Randomize the initial weights in the network
+    randomize(network);
+    
+    //train on CPU
+    train_batch(network, features, targets, batch_size, learning_rate, momentum);
+    //train on GPU
+    GPU_train_batch(network, features, targets, batch_size, learning_rate, momentum);
+    
+    //train on CPU
+    arma::Mat<float> outputs = predict(network, features);
+    //train on GPU
+    arma::Mat<float> outputs_GPU = GPU_predict(network, features);
+
 
 ##Results:
 On an Olin laptop, performance on the CPU is better.
 On a desktop computer with a medium high grade GPU, GPU outperforms by a factor of 4 to 5.
 
-##files
+##Files
 ###src/
 ####net.hpp
   Contains implementation of FeedForward_Network
