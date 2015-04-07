@@ -50,9 +50,9 @@ For more examples see samples/.
     //train on GPU
     GPU_train_batch(network, features, targets, batch_size, learning_rate, momentum);
     
-    //train on CPU
+    //predict on CPU
     arma::Mat<float> outputs = predict(network, features);
-    //train on GPU
+    //predict on GPU
     arma::Mat<float> outputs_GPU = GPU_predict(network, features);
 
 
